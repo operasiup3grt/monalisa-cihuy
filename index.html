@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monalisa · Portal Operasi UP3 Garut</title>
+<meta name="theme-color" content="#0b1d33">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/ikon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/ikon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sisi: #0b1d33; --sisi-2: #10294a; --sisi-garis: #ffffff14; --sisi-teks: #a9b8cc; --sisi-teks-terang: #f4f7fb;
+    --emas: #f2c14e; --emas-lembut: #f2c14e22;
+    --latar: #f4f6fa; --kartu: #ffffff; --garis: #e3e8ef; --teks: #142235; --teks-2: #5d6b80; --teks-3: #95a1b3;
+    --lebar-sisi: 248px; --lebar-mini: 68px;
+    font-family: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 14px; color: var(--teks);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--latar); }
+  button { font: inherit; cursor: pointer; color: inherit; }
+  [hidden] { display: none !important; }
+
+  .tata { display: flex; height: 100%; }
+
+  /* ================= Sidebar ================= */
+  .sisi { width: var(--lebar-sisi); flex-shrink: 0; background: var(--sisi); color: var(--sisi-teks); display: flex; flex-direction: column; position: relative; z-index: 10; contain: layout paint; }
+  .mini .sisi { width: var(--lebar-mini); }
+  .merek { display: flex; align-items: center; gap: 12px; padding: 18px 16px 14px; border: 0; background: none; text-align: left; color: var(--sisi-teks-terang); }
+  .merek img { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; box-shadow: 0 0 0 1px #ffffff1f; }
+  .merek .nama { font-weight: 800; font-size: 19px; letter-spacing: .01em; line-height: 1; }
+  .merek .nama small { display: block; font-weight: 500; font-size: 11px; color: var(--sisi-teks); letter-spacing: .02em; margin-top: 5px; }
+  .judul-daftar { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: #6f84a1; padding: 14px 20px 8px; font-weight: 700; }
+  .mini .merek .nama, .mini .judul-daftar, .mini .item .teks, .mini .item .chip, .mini .aksi-bawah .label-aksi { display: none; }
+  .mini .merek { justify-content: center; padding-inline: 0; }
+
+  .daftar { list-style: none; margin: 0; padding: 0 10px; display: grid; gap: 4px; }
+  .item { position: relative; display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 12px; cursor: pointer; transition: background .15s, color .15s; user-select: none; }
+  .mini .item { justify-content: center; padding: 9px 0; }
+  .item:hover { background: #ffffff0d; color: var(--sisi-teks-terang); }
+  .item.tampil { background: #ffffff12; color: #fff; }
+  .item.fokus::before { content: ""; position: absolute; left: -10px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: var(--emas); }
+  .item .glif { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: 12px; color: #fff; flex-shrink: 0; position: relative; letter-spacing: .02em; }
+  .item .glif .status { position: absolute; right: -3px; bottom: -3px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--sisi); background: #4b5d76; }
+  .item.hidup .glif .status { background: #3ecf8e; }
+  .item.memuat .glif .status { background: var(--emas); animation: kedip 1s ease-in-out infinite; }
+  @keyframes kedip { 50% { opacity: .3; } }
+  .item .teks { display: grid; min-width: 0; flex: 1; }
+  .item .teks b { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .teks small { font-size: 11.5px; color: #7489a5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item.tampil .teks small { color: #9fb1c8; }
+  .item .chip { font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 3px 7px; border-radius: 999px; background: var(--emas-lembut); color: var(--emas); text-transform: uppercase; }
+  .item .tutup-item { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border-radius: 7px; border: 0; background: #0b1d33; color: #c9d5e4; font-size: 16px; line-height: 1; display: none; place-items: center; padding: 0; }
+  .item:hover .tutup-item, .item:focus-within .tutup-item { display: grid; }
+  .item:hover .chip:has(+ .tutup-item), .item:focus-within .chip:has(+ .tutup-item) { visibility: hidden; }
+  .item .tutup-item:hover { background: #e5484d; color: #fff; }
+  .mini .item .tutup-item { display: none !important; }
+  .item.diseret { opacity: .35; }
+  .item.sisip-atas::after, .item.sisip-bawah::after { content: ""; position: absolute; left: 8px; right: 8px; height: 2px; border-radius: 2px; background: var(--emas); }
+  .item.sisip-atas::after { top: -3px; } .item.sisip-bawah::after { bottom: -3px; }
+  .petunjuk-seret { margin: 10px 18px 0; font-size: 11.5px; line-height: 1.5; color: #6f84a1; }
+  .mini .petunjuk-seret { display: none; }
+
+  .aksi-bawah { margin-top: auto; padding: 12px 10px 14px; border-top: 1px solid var(--sisi-garis); display: grid; gap: 2px; }
+  .aksi-bawah button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 10px; border: 0; background: none; border-radius: 10px; color: var(--sisi-teks); font-size: 13px; text-align: left; }
+  .mini .aksi-bawah button { justify-content: center; }
+  .aksi-bawah button:hover { background: #ffffff0d; color: #fff; }
+  .aksi-bawah button.nyala { color: var(--emas); }
+  .aksi-bawah button.bahaya:hover { background: #e5484d22; color: #ff8a8d; }
+  .aksi-bawah svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* ================= Panggung (kanan) ================= */
+  .panggung { flex: 1; min-width: 0; position: relative; }
+  .bingkai { position: absolute; top: 0; bottom: 0; display: flex; flex-direction: column; background: #fff; }
+  .bingkai.sembunyi { visibility: hidden; pointer-events: none; z-index: -1; }
+  .bingkai iframe { flex: 1; border: 0; width: 100%; display: block; background: #fff; }
+  .kepala-panel { height: 34px; flex-shrink: 0; display: none; align-items: center; gap: 8px; padding: 0 8px 0 12px; background: #fff; border-bottom: 1px solid var(--garis); font-size: 12.5px; color: var(--teks-2); cursor: pointer; }
+  .dua .kepala-panel { display: flex; }
+  .kepala-panel .titik { width: 8px; height: 8px; border-radius: 50%; }
+  .kepala-panel b { font-weight: 600; color: var(--teks); }
+  .kepala-panel .spasi { flex: 1; }
+  .kepala-panel button { border: 0; background: none; padding: 4px 8px; border-radius: 7px; font-size: 12px; color: var(--teks-3); }
+  .kepala-panel button:hover { background: var(--latar); color: var(--teks); }
+  .bingkai.fokus .kepala-panel { box-shadow: inset 0 -2px 0 var(--emas); }
+  .muatan { position: absolute; inset: 0; display: grid; place-items: center; background: #fff; z-index: 2; color: var(--teks-2); text-align: center; }
+  .dua .muatan { top: 34px; }
+  .muatan .lingkar { width: 34px; height: 34px; border-radius: 50%; border: 3px solid #e7ecf3; border-top-color: var(--emas); animation: putar .8s linear infinite; margin: 0 auto 14px; }
+  @keyframes putar { to { transform: rotate(360deg); } }
+  .muatan b { display: block; color: var(--teks); font-weight: 600; margin-bottom: 2px; }
+  .muatan .lambat { margin-top: 14px; font-size: 13px; }
+  .muatan .lambat button { margin: 8px 4px 0; padding: 7px 12px; border-radius: 9px; border: 1px solid var(--garis); background: #fff; }
+  .pemisah { position: absolute; top: 0; bottom: 0; width: 10px; margin-left: -5px; cursor: col-resize; z-index: 6; }
+  .pemisah::after { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; width: 2px; background: var(--garis); transition: background .15s; }
+  .pemisah:hover::after, .pemisah.geser::after { background: var(--emas); }
+  .tirai { position: absolute; inset: 0; z-index: 7; }
+
+  /* Zona lepas saat menyeret */
+  .zona-lepas { position: absolute; inset: 0; z-index: 8; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 14px; background: rgba(11, 29, 51, .45); }
+  .zona-lepas .zona { border: 2px dashed #ffffffb0; border-radius: 18px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 15px; background: rgba(11, 29, 51, .35); transition: background .15s, border-color .15s; text-align: center; }
+  .zona-lepas .zona > div { pointer-events: none; }
+  .zona-lepas .zona small { display: block; font-weight: 500; font-size: 12px; opacity: .8; margin-top: 4px; }
+  .zona-lepas .zona.atas { background: rgba(242, 193, 78, .28); border-color: var(--emas); }
+
+  /* ================= Halaman awal (latar malam + jalur transmisi 3D) ================= */
+  .sambutan { position: absolute; inset: 0; overflow: hidden; background: #071427; }
+  .langit { position: absolute; inset: 0; background:
+      radial-gradient(1100px 600px at 75% 105%, #1d3d66 0%, transparent 60%),
+      radial-gradient(900px 500px at 10% 0%, #13294a 0%, transparent 60%),
+      linear-gradient(180deg, #050d1c 0%, #0a1d36 55%, #12325a 100%); }
+  .bintang { position: absolute; inset: 0 0 35% 0; will-change: opacity; background-image:
+      radial-gradient(1.2px 1.2px at 12% 18%, #fff9 50%, transparent 51%), radial-gradient(1px 1px at 27% 8%, #fff7 50%, transparent 51%),
+      radial-gradient(1.4px 1.4px at 41% 26%, #fffb 50%, transparent 51%), radial-gradient(1px 1px at 58% 12%, #fff8 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 69% 30%, #fff9 50%, transparent 51%), radial-gradient(1px 1px at 83% 6%, #fff7 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 91% 22%, #fffc 50%, transparent 51%), radial-gradient(1px 1px at 6% 40%, #fff6 50%, transparent 51%),
+      radial-gradient(1px 1px at 34% 44%, #fff5 50%, transparent 51%), radial-gradient(1.2px 1.2px at 76% 46%, #fff6 50%, transparent 51%),
+      radial-gradient(1px 1px at 50% 3%, #fff8 50%, transparent 51%), radial-gradient(1px 1px at 18% 30%, #fff6 50%, transparent 51%);
+    animation: kerlip 6s ease-in-out infinite alternate; }
+  @keyframes kerlip { from { opacity: .55; } to { opacity: 1; } }
+  .gunung { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 58%; }
+  #latar-3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .kabut { position: absolute; inset: auto 0 0 0; height: 22%; background: linear-gradient(180deg, transparent, #071427aa 80%, #071427); pointer-events: none; }
+  .sambutan-wadah { position: absolute; inset: 0; display: grid; align-items: center; justify-items: start; padding: 32px 32px 32px clamp(32px, 7vw, 120px); overflow: auto; }
+  .sambutan-isi { text-align: left; max-width: 500px; padding: 38px 40px 30px; border-radius: 28px;
+    background: linear-gradient(180deg, #0c2039e8, #0b1d33d6); border: 1px solid #ffffff1c;
+    box-shadow: 0 30px 80px -30px #000c, inset 0 1px 0 #ffffff14; }
+  .sambutan .logo-besar { width: 72px; height: 72px; border-radius: 20px; margin: 0 0 20px; box-shadow: 0 0 0 1px #f2c14e40, 0 18px 50px -10px #f2c14e55; }
+  .sambutan h1 { font-size: 46px; font-weight: 800; letter-spacing: -.02em; margin: 0; color: #fff; }
+  .sambutan h1 span { color: var(--emas); }
+  .sambutan p { margin: 10px 0 28px; color: #b9c8db; font-size: 15.5px; line-height: 1.6; max-width: 440px; }
+  .tombol-besar { display: inline-flex; align-items: center; gap: 10px; padding: 15px 28px; border-radius: 14px; border: 0; background: var(--emas); color: #0b1d33; font-weight: 800; font-size: 15.5px; box-shadow: 0 14px 34px -10px #f2c14e88; transition: transform .15s, box-shadow .15s, background .15s; }
+  .tombol-besar:hover { transform: translateY(-1px); background: #ffd06a; box-shadow: 0 18px 40px -10px #f2c14eaa; }
+  .tombol-besar svg { width: 18px; height: 18px; color: #0b1d33; }
+  .catatan-kecil { margin-top: 16px; font-size: 12.5px; color: #8fa3bd; }
+  .catatan-kecil button { border: 0; background: none; padding: 0; color: #d3deeb; text-decoration: underline; text-underline-offset: 3px; font-size: 12.5px; }
+  .tagline { margin-top: 22px; padding-top: 16px; border-top: 1px solid #ffffff14; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #6f87a6; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(14px); background: var(--sisi); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px; opacity: 0; transition: .2s; pointer-events: none; z-index: 50; box-shadow: 0 10px 24px -8px rgba(0,0,0,.35); }
+  .toast.tampil { opacity: 1; transform: translateX(-50%); }
+
+  /* Dialog kecil (cara pasang) */
+  .lapis { position: fixed; inset: 0; background: rgba(11, 29, 51, .45); display: grid; place-items: center; z-index: 40; padding: 20px; }
+  .dialog { background: #fff; border-radius: 18px; padding: 22px 24px; max-width: 420px; box-shadow: 0 24px 60px -20px rgba(0,0,0,.45); }
+  .dialog h2 { margin: 0 0 8px; font-size: 17px; }
+  .dialog ol { margin: 0 0 16px; padding-left: 18px; color: var(--teks-2); line-height: 1.7; font-size: 13.5px; }
+  .dialog button { padding: 9px 16px; border-radius: 10px; border: 0; background: var(--sisi); color: #fff; font-weight: 600; }
+
+  @media (max-width: 820px) {
+    :root { --lebar-sisi: var(--lebar-mini); }
+    .sisi .merek .nama, .sisi .judul-daftar, .sisi .item .teks, .sisi .item .chip, .sisi .aksi-bawah .label-aksi, .petunjuk-seret { display: none; }
+    .sisi .merek, .sisi .item, .sisi .aksi-bawah button { justify-content: center; }
+    .sisi .item { padding: 9px 0; }
+    #aksi-dua, #aksi-mini { display: none !important; }
+    .sambutan h1 { font-size: 34px; }
+    .sambutan-wadah { justify-items: center; padding: 20px; }
+    .sambutan-isi { padding: 28px 22px 22px; text-align: center; }
+    .sambutan .logo-besar { margin: 0 auto 18px; }
+    .sambutan p { margin: 10px auto 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="tata" id="tata">
+  <!-- ========== Sidebar ========== -->
+  <aside class="sisi" aria-label="Daftar aplikasi">
+    <button class="merek" id="ke-awal" title="Halaman awal">
+      <img src="/ikon.svg" alt="">
+      <span class="nama">Monalisa<small>Portal Operasi UP3 Garut</small></span>
+    </button>
+    <div class="judul-daftar">Aplikasi</div>
+    <ul class="daftar" id="daftar"></ul>
+    <p class="petunjuk-seret">Seret untuk mengubah urutan, atau seret ke layar kanan untuk membagi layar.</p>
+
+    <div class="aksi-bawah">
+      <button id="aksi-dua" title="Bagi layar jadi dua">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M12 4v16"/></svg>
+        <span class="label-aksi">Bagi layar</span>
+      </button>
+      <button id="aksi-muat" title="Muat ulang aplikasi yang aktif">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+        <span class="label-aksi">Muat ulang</span>
+      </button>
+      <button id="aksi-luar" title="Buka aplikasi aktif di tab browser">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>
+        <span class="label-aksi">Buka di tab browser</span>
+      </button>
+      <button id="aksi-tutup-semua" class="bahaya" title="Tutup semua aplikasi dan kembali ke halaman awal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg>
+        <span class="label-aksi">Tutup semua</span>
+      </button>
+      <button id="aksi-mini" title="Kecilkan / lebarkan panel kiri">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/><path d="m15 10-2 2 2 2"/></svg>
+        <span class="label-aksi">Kecilkan panel</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ========== Panggung ========== -->
+  <main class="panggung" id="panggung">
+    <section class="sambutan" id="sambutan">
+      <div class="langit"></div>
+      <div class="bintang"></div>
+      <!-- Siluet pegunungan (gaya Cikuray–Papandayan), digambar sendiri -->
+      <svg class="gunung" viewBox="0 0 1600 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b3a61"/><stop offset="1" stop-color="#0d2240"/></linearGradient>
+          <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#132c4d"/><stop offset="1" stop-color="#0a1a31"/></linearGradient>
+        </defs>
+        <path fill="url(#g1)" opacity=".75" d="M0 420 L140 360 L260 380 L420 250 L520 300 L640 210 L720 120 L800 210 L900 260 L1020 230 L1160 300 L1300 240 L1440 320 L1600 280 L1600 600 L0 600Z"/>
+        <path fill="url(#g2)" d="M0 480 L120 440 L230 460 L360 400 L470 430 L600 380 L700 410 L830 350 L960 420 L1090 390 L1220 440 L1350 400 L1480 450 L1600 420 L1600 600 L0 600Z"/>
+        <g fill="#f2c14e" opacity=".55">
+          <circle cx="210" cy="520" r="1.6"/><circle cx="236" cy="528" r="1.2"/><circle cx="520" cy="505" r="1.4"/><circle cx="548" cy="512" r="1.1"/>
+          <circle cx="760" cy="540" r="1.5"/><circle cx="790" cy="532" r="1.2"/><circle cx="812" cy="546" r="1.4"/><circle cx="1030" cy="515" r="1.3"/>
+          <circle cx="1262" cy="530" r="1.5"/><circle cx="1290" cy="522" r="1.1"/><circle cx="1450" cy="540" r="1.3"/>
+        </g>
+      </svg>
+      <canvas id="latar-3d" aria-hidden="true"></canvas>
+      <div class="kabut"></div>
+      <div class="sambutan-wadah">
+        <div class="sambutan-isi">
+          <img class="logo-besar" src="/ikon.svg" alt="">
+          <h1>Mona<span>lisa</span></h1>
+          <p>Semua aplikasi Operasi Distribusi, mulai dari SAIDI, FGTM, HAR Proteksi, Koreksi APKT, Setting REC/SSO, Kinerja UP3, sampai Pustaka Opdist, dalam satu jendela tanpa berpindah-pindah tab.</p>
+          <button class="tombol-besar" id="buka-semua">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+            Buka semua aplikasi
+          </button>
+          <div class="catatan-kecil" id="info-terbuka" hidden></div>
+          <div class="catatan-kecil">Atau pilih satu dari daftar di kiri · <button id="cara-pasang">Pasang sebagai aplikasi</button></div>
+          <div class="tagline">PLN UP3 Garut · Operasi Distribusi</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="lapis" id="dialog-pasang" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="judul-pasang">
+    <h2 id="judul-pasang">Pasang Monalisa sebagai aplikasi</h2>
+    <ol>
+      <li>Di Chrome, klik ikon pasang di ujung kanan bilah alamat, atau menu <b>⋮ → Transmisikan, simpan, dan bagikan → Instal halaman sebagai aplikasi</b>.</li>
+      <li>Monalisa akan terbuka di jendela sendiri dan punya ikon di desktop atau taskbar, terpisah dari tab Chrome lain.</li>
+    </ol>
+    <button id="tutup-dialog">Mengerti</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* =========================================================
+   DAFTAR APLIKASI — tambah atau ubah di sini saja.
+   ========================================================= */
+const APLIKASI = [
+  { id: 'saidi',    nama: 'SAIDI SAIFI',     ket: 'Keandalan · SAIDI, SAIFI, ENS',  glif: 'SS', warna: 'linear-gradient(135deg,#e0518b,#a8326a)', titik: '#c2417a', url: 'https://sse-up3.portalgarut5.web.id/' },
+  { id: 'fgtm',     nama: 'FGTM',            ket: 'Gangguan TM · trip & reclose',   glif: 'FG', warna: 'linear-gradient(135deg,#f08a3c,#c35a14)', titik: '#d0681c', url: 'https://fgtm.portalgarut5.web.id/' },
+  { id: 'proteksi', nama: 'HAR Proteksi',    ket: 'Inspeksi recloser & SSO',        glif: 'HP', warna: 'linear-gradient(135deg,#8b6cf0,#5a3fc0)', titik: '#6d4fd1', url: 'https://har-proteksi.portalgarut5.web.id/' },
+  { id: 'apkt',     nama: 'Koreksi APKT',    ket: 'Koreksi waktu & cetak BA',       glif: 'KA', warna: 'linear-gradient(135deg,#22b3a6,#0b7a76)', titik: '#0f8b8d', url: 'https://koreksi-apkt.portalgarut5.web.id/' },
+  { id: 'setting',  nama: 'Setting REC/SSO', ket: 'Koordinasi PMT–recloser–SSO',    glif: 'SR', warna: 'linear-gradient(135deg,#4c8de0,#1d56a3)', titik: '#1f5fa8', url: 'https://cc-proteksi.portalgarut5.web.id/' },
+  { id: 'kinerja',  nama: 'Kinerja UP3',     ket: 'Realisasi kinerja & indikator',  glif: 'KU', warna: 'linear-gradient(135deg,#34c38f,#13865d)', titik: '#1a9b6c', url: 'https://kinerjaup3.portalgarut5.web.id/' },
+  { id: 'pustaka',  nama: 'Pustaka Opdist',  ket: 'Dokumen & SLD gardu induk',      glif: 'PO', warna: 'linear-gradient(135deg,#c79a5b,#8a6230)', titik: '#a67a3f', url: 'https://pandu-grt.vercel.app/' },
+];
+const BATAS_LAMBAT_MS = 25000;
+
+const $ = (s) => document.querySelector(s);
+const aplikasi = Object.fromEntries(APLIKASI.map((a) => [a.id, a]));
+const panggung = $('#panggung');
+
+/* ---------- State ---------- */
+const state = { urutan: APLIKASI.map((a) => a.id), kiri: null, kanan: null, fokus: 'kiri', rasio: 0.5, mini: false };
+// Yang disimpan hanya preferensi tampilan. Aplikasi yang terbuka TIDAK disimpan,
+// jadi saat Monalisa dibuka lagi tidak ada aplikasi yang langsung dimuat.
+function simpan() {
+  try { localStorage.setItem('monalisa', JSON.stringify({ urutan: state.urutan, rasio: state.rasio, mini: state.mini })); } catch { /* abaikan */ }
+}
+function pulihkan() {
+  try {
+    const s = JSON.parse(localStorage.getItem('monalisa') || 'null');
+    if (!s) return;
+    const urut = (s.urutan || []).filter((id) => aplikasi[id]);
+    state.urutan = [...urut, ...APLIKASI.map((a) => a.id).filter((id) => !urut.includes(id))];
+    state.rasio = Math.min(Math.max(Number(s.rasio) || 0.5, 0.2), 0.8);
+    state.mini = !!s.mini;
+  } catch { /* abaikan */ }
+}
+
+/* ---------- Bingkai: dibuat sekali, tidak pernah dipindah di DOM (agar tidak dimuat ulang) ---------- */
+const bingkai = {};
+function siapkanBingkai(id) {
+  if (bingkai[id]) return bingkai[id];
+  const a = aplikasi[id];
+  const el = document.createElement('div');
+  el.className = 'bingkai sembunyi';
+  el.innerHTML = `
+    <div class="kepala-panel"><span class="titik" style="background:${a.titik}"></span><b>${a.nama}</b><span class="spasi"></span>
+      <button data-aksi="tukar" title="Tukar posisi kiri dan kanan">Tukar</button>
+      <button data-aksi="penuh" title="Tampilkan layar penuh">Layar penuh</button>
+      <button data-aksi="muat" title="Muat ulang">Muat ulang</button>
+      <button data-aksi="tutup" title="Tutup aplikasi ini">Tutup</button></div>
+    <div class="muatan"><div><div class="lingkar"></div><b>Membuka ${a.nama}</b>Mohon tunggu sebentar…
+      <div class="lambat" hidden>Belum terbuka juga?<br><button data-aksi="muat">Muat ulang</button><button data-aksi="luar">Buka di tab browser</button></div></div></div>
+    <iframe title="${a.nama}" allow="clipboard-read; clipboard-write; fullscreen"></iframe>`;
+  const iframe = el.querySelector('iframe');
+  const muatan = el.querySelector('.muatan');
+  const lambat = el.querySelector('.lambat');
+  let timer;
+  const muat = () => {
+    muatan.hidden = false; lambat.hidden = true;
+    tandai(id, 'memuat');
+    clearTimeout(timer);
+    timer = setTimeout(() => { lambat.hidden = false; }, BATAS_LAMBAT_MS);
+    iframe.src = a.url;
+  };
+  iframe.addEventListener('load', () => { if (!iframe.getAttribute('src')) return; clearTimeout(timer); muatan.hidden = true; tandai(id, 'hidup'); });
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-aksi]');
+    const sisi = state.kiri === id ? 'kiri' : 'kanan';
+    if (b) {
+      e.stopPropagation();
+      const x = b.dataset.aksi;
+      if (x === 'muat') muat();
+      if (x === 'tutup') { tutupAplikasi(id); return; }
+      if (x === 'luar') bukaLuar(id);
+      if (x === 'tukar') { [state.kiri, state.kanan] = [state.kanan, state.kiri]; state.fokus = state.fokus === 'kiri' ? 'kanan' : 'kiri'; render(); }
+      if (x === 'penuh') { state.kiri = id; state.kanan = null; state.fokus = 'kiri'; render(); }
+      return;
+    }
+    if (e.target.closest('.kepala-panel')) { state.fokus = sisi; render(); }
+  });
+  panggung.appendChild(el);
+  bingkai[id] = { el, muat, iframe, status: 'memuat' };
+  muat();
+  return bingkai[id];
+}
+function tandai(id, status) {
+  if (bingkai[id]) bingkai[id].status = status;
+  const li = document.querySelector(`.item[data-id="${id}"]`);
+  if (li) { li.classList.toggle('memuat', status === 'memuat'); li.classList.toggle('hidup', status === 'hidup'); }
+}
+
+/* ---------- Aksi ---------- */
+function tampilkan(id, posisi) {
+  if (!aplikasi[id]) return;
+  const dua = !!state.kanan;
+  if (posisi === 'penuh') { state.kiri = id; state.kanan = null; state.fokus = 'kiri'; }
+  else if (posisi === 'kiri' || posisi === 'kanan') {
+    const lain = posisi === 'kiri' ? 'kanan' : 'kiri';
+    if (state[lain] === id) state[lain] = state[posisi];
+    state[posisi] = id;
+    if (!state.kiri) { state.kiri = state.kanan; state.kanan = null; }
+    if (state.kiri === state.kanan) state.kanan = null;
+    state.fokus = state.kanan ? posisi : 'kiri';
+  } else if (dua) {
+    if (state.kiri === id || state.kanan === id) state.fokus = state.kiri === id ? 'kiri' : 'kanan';
+    else state[state.fokus] = id;
+  } else {
+    state.kiri = id; state.fokus = 'kiri';
+  }
+  render();
+}
+
+function bukaSemua() {
+  const urut = state.urutan;
+  tampilkan(urut[0], 'penuh');
+  jadwalBukaSemua = urut.slice(1).map((id, i) => setTimeout(() => { siapkanBingkai(id); render(); }, 400 * (i + 1))); // dimuat di belakang layar
+  toast('Semua aplikasi sedang dibuka di belakang layar');
+}
+
+function bagiLayar() {
+  if (state.kanan) { state.kanan = null; state.fokus = 'kiri'; render(); return; }
+  if (!state.kiri) { toast('Pilih satu aplikasi dulu'); return; }
+  const calon = state.urutan.find((id) => id !== state.kiri && bingkai[id]) || state.urutan.find((id) => id !== state.kiri);
+  state.kanan = calon; state.fokus = 'kanan';
+  render();
+  toast('Klik aplikasi di kiri untuk mengganti panel yang bergaris emas');
+}
+
+// Menutup aplikasi = halamannya dikosongkan lalu dibuang, sehingga memorinya dilepas.
+function lepasBingkai(id) {
+  const b = bingkai[id]; if (!b) return;
+  try { b.iframe.src = 'about:blank'; } catch { /* abaikan */ }
+  b.el.remove();
+  delete bingkai[id];
+}
+let jadwalBukaSemua = [];
+function tutupAplikasi(id) {
+  lepasBingkai(id);
+  if (state.kiri === id) { state.kiri = state.kanan; state.kanan = null; }
+  if (state.kanan === id) state.kanan = null;
+  if (!state.kanan) state.fokus = 'kiri';
+  if (!state.kiri) {
+    // tampilkan aplikasi lain yang masih terbuka, kalau ada
+    state.kiri = state.urutan.find((x) => bingkai[x]) || null;
+  }
+  render();
+  toast(`${aplikasi[id].nama} ditutup`);
+}
+function tutupSemua() {
+  jadwalBukaSemua.forEach(clearTimeout); jadwalBukaSemua = [];
+  const ada = Object.keys(bingkai).length;
+  Object.keys(bingkai).forEach(lepasBingkai);
+  state.kiri = null; state.kanan = null; state.fokus = 'kiri';
+  render();
+  if (ada) toast('Semua aplikasi ditutup');
+}
+
+function aktif() { return state[state.fokus] || state.kiri; }
+function bukaLuar(id) { const a = aplikasi[id || aktif()]; if (a) window.open(a.url, '_blank', 'noopener'); else toast('Belum ada aplikasi yang tampil'); }
+
+/* ---------- Render ---------- */
+function render() {
+  document.body.classList.toggle('mini', state.mini);
+  const dua = !!(state.kiri && state.kanan);
+  panggung.classList.toggle('dua', dua);
+  $('#sambutan').hidden = !!state.kiri;
+  if (window.LatarMonalisa) { if (state.kiri) window.LatarMonalisa.berhenti(); else window.LatarMonalisa.mulai(); }
+  const nTerbuka = Object.keys(bingkai).length;
+  $('#info-terbuka').hidden = !(nTerbuka && !state.kiri);
+  $('#info-terbuka').innerHTML = `${nTerbuka} aplikasi masih terbuka di belakang layar · <button id="tutup-dari-awal">Tutup semua</button>`;
+  $('#buka-semua').lastChild.textContent = nTerbuka ? ' Lanjutkan' : ' Buka semua aplikasi';
+  $('#aksi-dua').classList.toggle('nyala', dua);
+  $('#aksi-mini .label-aksi').textContent = state.mini ? 'Lebarkan panel' : 'Kecilkan panel';
+
+  // Daftar aplikasi (statis, urutan bisa diubah)
+  $('#daftar').innerHTML = state.urutan.map((id) => {
+    const a = aplikasi[id];
+    const pos = state.kiri === id ? 'kiri' : state.kanan === id ? 'kanan' : '';
+    const st = bingkai[id]?.status || '';
+    const chip = dua && pos ? `<span class="chip">${pos}</span>` : '';
+    return `<li class="item ${pos ? 'tampil' : ''} ${pos && pos === state.fokus && dua ? 'fokus' : (pos && !dua ? 'fokus' : '')} ${st}" data-id="${id}" draggable="true" tabindex="0" title="${a.nama}">
+      <span class="glif" style="background:${a.warna}">${a.glif}<span class="status"></span></span>
+      <span class="teks"><b>${a.nama}</b><small>${a.ket}</small></span>${chip}
+      ${bingkai[id] ? `<button class="tutup-item" data-tutup="${id}" title="Tutup ${a.nama}" aria-label="Tutup ${a.nama}">×</button>` : ''}</li>`;
+  }).join('');
+
+  // Posisi bingkai
+  const lebar = panggung.clientWidth;
+  const x = Math.round(lebar * state.rasio);
+  for (const id of [state.kiri, state.kanan]) if (id) siapkanBingkai(id);
+  for (const [id, b] of Object.entries(bingkai)) {
+    const terlihat = id === state.kiri || (dua && id === state.kanan);
+    b.el.classList.toggle('sembunyi', !terlihat);
+    b.el.classList.toggle('fokus', dua && state[state.fokus] === id);
+    if (dua && id === state.kanan) { b.el.style.left = `${x}px`; b.el.style.width = `${lebar - x}px`; }
+    else if (dua && id === state.kiri) { b.el.style.left = '0px'; b.el.style.width = `${x}px`; }
+    else { b.el.style.left = '0px'; b.el.style.width = `${lebar}px`; }
+  }
+
+  let pem = document.getElementById('pemisah');
+  if (dua) {
+    if (!pem) { pem = document.createElement('div'); pem.id = 'pemisah'; pem.className = 'pemisah'; panggung.appendChild(pem); pasangGeser(pem); }
+    pem.style.left = `${x}px`;
+  } else if (pem) pem.remove();
+
+  document.title = state.kiri ? `${aplikasi[aktif()].nama} · Monalisa` : 'Monalisa · Portal Operasi UP3 Garut';
+  simpan();
+}
+
+/* ---------- Geser pemisah ---------- */
+function pasangGeser(pem) {
+  pem.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    pem.classList.add('geser');
+    const tirai = document.createElement('div'); tirai.className = 'tirai'; tirai.style.cursor = 'col-resize'; panggung.appendChild(tirai);
+    const gerak = (ev) => { const r = panggung.getBoundingClientRect(); state.rasio = Math.min(Math.max((ev.clientX - r.left) / r.width, 0.2), 0.8); render(); };
+    const lepas = () => { pem.classList.remove('geser'); tirai.remove(); removeEventListener('pointermove', gerak); removeEventListener('pointerup', lepas); };
+    addEventListener('pointermove', gerak); addEventListener('pointerup', lepas);
+  });
+}
+
+/* ---------- Seret & lepas ---------- */
+let diseret = null;
+const daftar = $('#daftar');
+
+daftar.addEventListener('dragstart', (e) => {
+  const li = e.target.closest('.item'); if (!li) return;
+  diseret = li.dataset.id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', diseret);
+  requestAnimationFrame(() => { li.classList.add('diseret'); tampilkanZona(); });
+});
+// dragend dipasang di document: item yang diseret bisa sudah digambar ulang saat dilepas
+document.addEventListener('dragend', () => { if (!diseret && !document.getElementById('zona-lepas')) return; diseret = null; bersihkanSisip(); sembunyikanZona(); render(); });
+daftar.addEventListener('dragover', (e) => {
+  if (!diseret) return;
+  const li = e.target.closest('.item'); if (!li || li.dataset.id === diseret) return;
+  e.preventDefault();
+  const r = li.getBoundingClientRect();
+  bersihkanSisip();
+  li.classList.add(e.clientY < r.top + r.height / 2 ? 'sisip-atas' : 'sisip-bawah');
+});
+daftar.addEventListener('drop', (e) => {
+  if (!diseret) return;
+  const li = e.target.closest('.item'); if (!li) return;
+  e.preventDefault();
+  const sebelum = li.classList.contains('sisip-atas');
+  const urut = state.urutan.filter((id) => id !== diseret);
+  let i = urut.indexOf(li.dataset.id); if (!sebelum) i++;
+  urut.splice(i, 0, diseret);
+  state.urutan = urut;
+  diseret = null; bersihkanSisip(); sembunyikanZona(); render();
+});
+function bersihkanSisip() { document.querySelectorAll('.sisip-atas,.sisip-bawah').forEach((el) => el.classList.remove('sisip-atas', 'sisip-bawah')); }
+
+function tampilkanZona() {
+  if (window.innerWidth <= 820) return;
+  const z = document.createElement('div');
+  z.className = 'zona-lepas'; z.id = 'zona-lepas';
+  const ada = !!state.kiri;
+  z.innerHTML = ada
+    ? `<div class="zona" data-pos="kiri"><div>Tampilkan di kiri<small>layar dibagi dua</small></div></div><div class="zona" data-pos="kanan"><div>Tampilkan di kanan<small>layar dibagi dua</small></div></div>`
+    : `<div class="zona" data-pos="penuh" style="grid-column:1/-1"><div>Tampilkan di sini<small>layar penuh</small></div></div>`;
+  z.addEventListener('dragover', (e) => {
+    const zona = e.target.closest('.zona'); if (!zona) return;
+    e.preventDefault();
+    z.querySelectorAll('.zona').forEach((el) => el.classList.toggle('atas', el === zona));
+  });
+  z.addEventListener('dragleave', (e) => { if (!z.contains(e.relatedTarget)) z.querySelectorAll('.zona').forEach((el) => el.classList.remove('atas')); });
+  z.addEventListener('drop', (e) => {
+    const zona = e.target.closest('.zona'); if (!zona || !diseret) return;
+    e.preventDefault();
+    const id = diseret, pos = zona.dataset.pos;
+    diseret = null; sembunyikanZona();
+    if ((pos === 'kiri' || pos === 'kanan') && state.kiri && !state.kanan && state.kiri === id) { toast('Seret aplikasi lain untuk mengisi sisi satunya'); return; }
+    if ((pos === 'kiri' || pos === 'kanan') && state.kiri && !state.kanan) {
+      const lama = state.kiri;
+      state.kiri = pos === 'kiri' ? id : lama;
+      state.kanan = pos === 'kiri' ? lama : id;
+      state.fokus = pos;
+      render();
+    } else tampilkan(id, pos);
+  });
+  panggung.appendChild(z);
+}
+function sembunyikanZona() { document.getElementById('zona-lepas')?.remove(); }
+
+/* ---------- Event lain ---------- */
+daftar.addEventListener('click', (e) => {
+  const x = e.target.closest('[data-tutup]');
+  if (x) { e.stopPropagation(); tutupAplikasi(x.dataset.tutup); return; }
+  const li = e.target.closest('.item'); if (li) tampilkan(li.dataset.id);
+});
+// Klik tengah pada item = tutup, seperti tab browser
+daftar.addEventListener('auxclick', (e) => { const li = e.target.closest('.item'); if (li && e.button === 1 && bingkai[li.dataset.id]) { e.preventDefault(); tutupAplikasi(li.dataset.id); } });
+daftar.addEventListener('keydown', (e) => { const li = e.target.closest('.item'); if (li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); tampilkan(li.dataset.id); } });
+$('#ke-awal').addEventListener('click', () => { state.kiri = null; state.kanan = null; state.fokus = 'kiri'; render(); });
+$('#buka-semua').addEventListener('click', () => {
+  const ada = state.urutan.find((id) => bingkai[id]);
+  if (ada) tampilkan(ada, 'penuh'); else bukaSemua();
+});
+document.addEventListener('click', (e) => { if (e.target.id === 'tutup-dari-awal') tutupSemua(); });
+$('#aksi-dua').addEventListener('click', bagiLayar);
+$('#aksi-muat').addEventListener('click', () => { const id = aktif(); if (id && bingkai[id]) { bingkai[id].muat(); toast(`Memuat ulang ${aplikasi[id].nama}`); } else toast('Belum ada aplikasi yang tampil'); });
+$('#aksi-luar').addEventListener('click', () => bukaLuar());
+$('#aksi-tutup-semua').addEventListener('click', tutupSemua);
+$('#aksi-mini').addEventListener('click', () => { state.mini = !state.mini; render(); });
+let rafTata = 0;
+addEventListener('resize', () => { cancelAnimationFrame(rafTata); rafTata = requestAnimationFrame(render); });
+
+let promptPasang = null;
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); promptPasang = e; });
+$('#cara-pasang').addEventListener('click', async () => {
+  if (promptPasang) { promptPasang.prompt(); await promptPasang.userChoice; promptPasang = null; return; }
+  $('#dialog-pasang').hidden = false;
+});
+$('#tutup-dialog').addEventListener('click', () => { $('#dialog-pasang').hidden = true; });
+$('#dialog-pasang').addEventListener('click', (e) => { if (e.target.id === 'dialog-pasang') e.currentTarget.hidden = true; });
+addEventListener('appinstalled', () => toast('Monalisa terpasang sebagai aplikasi'));
+
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('tampil'); clearTimeout(toast.w); toast.w = setTimeout(() => el.classList.remove('tampil'), 2600); }
+
+/* ---------- Mulai ---------- */
+pulihkan();
+render();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+<script>
+/* =========================================================
+   LATAR 3D: jalur transmisi SUTT di malam hari, dibuat dari nol.
+   Hanya berjalan saat halaman awal terlihat; berhenti total saat aplikasi dibuka.
+   Kalau three.js gagal dimuat (offline), latar tetap tampil tanpa 3D.
+   ========================================================= */
+window.LatarMonalisa = (() => {
+  const kanvas = document.getElementById('latar-3d');
+  let siap = false, jalan = false, raf = 0, renderer, scene, kamera, jam, pulsa, posPulsa, rentang = [], tambahanAnim = [];
+  const JARAK = 70, JUMLAH_TOWER = 9, PANJANG = JARAK * JUMLAH_TOWER;
+  const tikus = { x: 0, y: 0, tx: 0, ty: 0 };
+  const hemat = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Resolusi menyesuaikan kemampuan perangkat: turun otomatis bila frame terasa berat, naik lagi bila ringan.
+  const DPR_MAKS = Math.min(devicePixelRatio || 1, 1.5);
+  let dpr = DPR_MAKS, rataFrame = 16, hitungFrame = 0, ukurTertunda = 0;
+
+  function buatTower() {
+    // Tower kisi (lattice) sederhana: 4 kaki meruncing, palang mendatar, silang X, dan 3 pasang lengan.
+    const v = [];
+    const garis = (a, b) => v.push(...a, ...b);
+    const H = 46, levels = [0, 8, 15, 21, 26, 30, 34, 38, 42, 46];
+    const lebar = (y) => 6.5 - (y / H) * 5.3; // setengah lebar
+    const sudut = (y) => { const w = lebar(y); return [[-w, y, -w], [w, y, -w], [w, y, w], [-w, y, w]]; };
+    for (let i = 0; i < levels.length; i++) {
+      const c = sudut(levels[i]);
+      for (let k = 0; k < 4; k++) garis(c[k], c[(k + 1) % 4]);
+      if (i < levels.length - 1) {
+        const d = sudut(levels[i + 1]);
+        for (let k = 0; k < 4; k++) { garis(c[k], d[k]); garis(c[k], d[(k + 1) % 4]); garis(c[(k + 1) % 4], d[k]); }
+      }
+    }
+    // Lengan travers (double circuit): ketinggian dan panjang
+    const lengan = [[30, 11], [37, 9.5], [44, 8]];
+    const titikKawat = [];
+    for (const [y, L] of lengan) {
+      const w = lebar(y);
+      for (const s of [-1, 1]) {
+        garis([s * w, y, -1.2], [s * L, y, 0]); garis([s * w, y, 1.2], [s * L, y, 0]);
+        garis([s * w, y - 2.2, -1.2], [s * L, y, 0]); garis([s * w, y - 2.2, 1.2], [s * L, y, 0]);
+        // isolator menggantung
+        garis([s * L, y, 0], [s * L, y - 2.6, 0]);
+        titikKawat.push([s * L, y - 2.6, 0]);
+      }
+    }
+    // Kawat tanah (GSW) di puncak
+    garis([-2.4, H, 0], [2.4, H, 0]); titikKawat.push([0, H + 0.01, 0]);
+    return { v, titikKawat };
+  }
+
+  function init() {
+    if (siap || !window.THREE) return siap;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas: kanvas, antialias: true, alpha: true, powerPreference: 'low-power' });
+    } catch { return false; }
+    renderer.setPixelRatio(dpr);
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0b2140, 0.0058);
+    kamera = new THREE.PerspectiveCamera(55, 1, 0.5, 900);
+    jam = new THREE.Clock();
+
+    // Lantai: grid tipis yang ikut bergerak (tampak tak berujung)
+    const grid = new THREE.GridHelper(1200, 120, 0x3b6ea8, 0x1f4470);
+    grid.material.transparent = true; grid.material.opacity = .45;
+    scene.add(grid);
+    tambahanAnim.push(() => { grid.position.z = Math.round(kamera.position.z / 10) * 10; grid.position.x = Math.round(kamera.position.x / 10) * 10; });
+
+    // Dua jalur transmisi sejajar
+    const jalur = [{ x: 0, warna: 0x9cc0ee }, { x: -120, warna: 0x56789f }];
+    const kawatV = [];
+    const titikPulsa = [];
+    const pola = buatTower(); // satu pola tower, dipakai berulang
+    for (const j of jalur) {
+      // OPTIMASI: semua tower satu jalur digabung jadi SATU geometri (1 draw call, bukan 9)
+      const towerV = new Float32Array(pola.v.length * JUMLAH_TOWER);
+      for (let i = 0; i < JUMLAH_TOWER; i++) {
+        const z = -i * JARAK, o = i * pola.v.length;
+        for (let q = 0; q < pola.v.length; q += 3) {
+          towerV[o + q] = pola.v[q] + j.x; towerV[o + q + 1] = pola.v[q + 1]; towerV[o + q + 2] = pola.v[q + 2] + z;
+        }
+      }
+      const gt = new THREE.BufferGeometry();
+      gt.setAttribute('position', new THREE.BufferAttribute(towerV, 3));
+      scene.add(new THREE.LineSegments(gt, new THREE.LineBasicMaterial({ color: j.warna, transparent: true, opacity: .62 })));
+
+      let titikSebelum = null;
+      for (let i = 0; i <= JUMLAH_TOWER; i++) {
+        const z = -i * JARAK;
+        const titik = pola.titikKawat.map(([x, y, zz]) => [x + j.x, y, zz + z]);
+        if (titikSebelum) {
+          titik.forEach((b, k) => {
+            const a = titikSebelum[k];
+            const sag = k === titik.length - 1 ? 2.2 : 4.2; // lendutan kawat
+            const seg = 22, kurva = [];
+            for (let n = 0; n <= seg; n++) {
+              const u = n / seg;
+              kurva.push([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u - sag * 4 * u * (1 - u), a[2] + (b[2] - a[2]) * u]);
+            }
+            for (let n = 0; n < seg; n++) kawatV.push(...kurva[n], ...kurva[n + 1]);
+            if (k < titik.length - 1) rentang.push(kurva); // GSW tidak dialiri pulsa
+          });
+        }
+        titikSebelum = titik;
+      }
+    }
+    const gk = new THREE.BufferGeometry();
+    gk.setAttribute('position', new THREE.Float32BufferAttribute(kawatV, 3));
+    const kawat = new THREE.LineSegments(gk, new THREE.LineBasicMaterial({ color: 0xa9c4e8, transparent: true, opacity: .38 }));
+    scene.add(kawat);
+
+    // Pulsa energi yang mengalir di kawat
+    const tek = (() => {
+      const c = document.createElement('canvas'); c.width = c.height = 64;
+      const x = c.getContext('2d'); const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, 'rgba(255,240,200,1)'); gr.addColorStop(.25, 'rgba(242,193,78,.85)'); gr.addColorStop(1, 'rgba(242,193,78,0)');
+      x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(c);
+    })();
+    const PER_RENTANG = 2;
+    const n = rentang.length * PER_RENTANG;
+    posPulsa = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) titikPulsa.push({ r: Math.floor(i / PER_RENTANG), u: Math.random(), v: .22 + Math.random() * .35 });
+    const gp = new THREE.BufferGeometry();
+    gp.setAttribute('position', new THREE.BufferAttribute(posPulsa, 3));
+    pulsa = new THREE.Points(gp, new THREE.PointsMaterial({ size: 2.6, map: tek, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xffffff }));
+    pulsa.userData.titik = titikPulsa;
+    scene.add(pulsa);
+
+    // Lampu kota/gardu di kejauhan
+    const lampuV = [];
+    for (let i = 0; i < 260; i++) lampuV.push((Math.random() - .5) * 700, .4, -Math.random() * PANJANG * 1.6 - 60);
+    const gl = new THREE.BufferGeometry(); gl.setAttribute('position', new THREE.Float32BufferAttribute(lampuV, 3));
+    const lampu = new THREE.Points(gl, new THREE.PointsMaterial({ size: 1.6, map: tek, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xffd58a, opacity: .7 }));
+    scene.add(lampu);
+    tambahanAnim.push((t) => { lampu.material.opacity = .55 + Math.sin(t * 1.7) * .12; });
+
+    addEventListener('pointermove', (e) => { tikus.tx = (e.clientX / innerWidth - .5) * 2; tikus.ty = (e.clientY / innerHeight - .5) * 2; }, { passive: true });
+    siap = true;
+    ukur();
+    return true;
+  }
+
+  function ukur() {
+    if (!siap) return;
+    renderer.setPixelRatio(dpr);
+    const w = kanvas.clientWidth || 1, h = kanvas.clientHeight || 1;
+    renderer.setSize(w, h, false);
+    kamera.aspect = w / h; kamera.updateProjectionMatrix();
+  }
+
+  function sesuaikanKualitas(dtAsli) {
+    rataFrame = rataFrame * .95 + dtAsli * 1000 * .05;
+    if (++hitungFrame < 90) return; // tunggu sekitar 1,5 detik sebelum menilai
+    hitungFrame = 0;
+    if (rataFrame > 24 && dpr > 0.75) { dpr = Math.max(0.75, dpr - 0.25); ukur(); }
+    else if (rataFrame < 14 && dpr < DPR_MAKS) { dpr = Math.min(DPR_MAKS, dpr + 0.25); ukur(); }
+  }
+
+  function langkah() {
+    const dtAsli = jam.getDelta(); // getDelta juga memperbarui elapsedTime
+    const dt = Math.min(dtAsli, .05);
+    sesuaikanKualitas(dtAsli);
+    const t = jam.elapsedTime;
+    // Kamera menyusuri jalur, berulang mulus setiap 1 jarak tower
+    const maju = hemat ? 0 : (t * 6) % JARAK;
+    tikus.x += (tikus.tx - tikus.x) * .04; tikus.y += (tikus.ty - tikus.y) * .04;
+    kamera.position.set(-46 + tikus.x * 6, 8 - tikus.y * 2.5, 52 - maju);
+    kamera.lookAt(-8 + tikus.x * 4, 24, -120 - maju);
+    // Gerakkan pulsa
+    const ts = pulsa.userData.titik;
+    for (let i = 0; i < ts.length; i++) {
+      const p = ts[i];
+      if (!hemat) { p.u += p.v * (dt || .016); if (p.u > 1) { p.u -= 1; } }
+      const k = rentang[p.r]; const f = p.u * (k.length - 1); const a = Math.floor(f), b = Math.min(a + 1, k.length - 1), w = f - a;
+      posPulsa[i * 3] = k[a][0] + (k[b][0] - k[a][0]) * w;
+      posPulsa[i * 3 + 1] = k[a][1] + (k[b][1] - k[a][1]) * w;
+      posPulsa[i * 3 + 2] = k[a][2] + (k[b][2] - k[a][2]) * w;
+    }
+    pulsa.geometry.attributes.position.needsUpdate = true;
+    tambahanAnim.forEach((f) => f(t));
+    renderer.render(scene, kamera);
+    if (jalan && !hemat) raf = requestAnimationFrame(langkah);
+  }
+
+  function mulai() {
+    if (jalan || document.hidden) return;
+    if (!init()) return;
+    jalan = true; jam.getDelta(); hitungFrame = 0; ukur();
+    raf = requestAnimationFrame(langkah);
+  }
+  function berhenti() { jalan = false; cancelAnimationFrame(raf); }
+
+  // Ukur ulang hanya saat ukuran kanvas benar-benar berubah, maksimal sekali per frame
+  new ResizeObserver(() => { cancelAnimationFrame(ukurTertunda); ukurTertunda = requestAnimationFrame(ukur); }).observe(kanvas);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) berhenti(); else if (!document.getElementById('sambutan').hidden) mulai(); });
+  return { mulai, berhenti };
+})();
+// three.js dimuat dengan defer, jadi aktifkan setelah halaman siap
+addEventListener('DOMContentLoaded', () => { if (!document.getElementById('sambutan').hidden) window.LatarMonalisa.mulai(); });
+</script>
+</body>
+</html>
