@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Monalisa · Portal Operasi UP3 Garut</title>
 <meta name="theme-color" content="#0b1d33">
 <link rel="manifest" href="/manifest.webmanifest">
@@ -21,11 +21,12 @@
     font-size: 14px; color: var(--teks);
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--latar); }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--latar); overscroll-behavior: none; }
+  @supports (height: 100dvh) { html, body { height: 100dvh; } }
   button { font: inherit; cursor: pointer; color: inherit; }
   [hidden] { display: none !important; }
 
-  .tata { display: flex; height: 100%; }
+  .tata { display: flex; height: 100%; padding-bottom: env(safe-area-inset-bottom); padding-left: env(safe-area-inset-left); }
 
   /* ================= Sidebar ================= */
   .sisi { width: var(--lebar-sisi); flex-shrink: 0; background: var(--sisi); color: var(--sisi-teks); display: flex; flex-direction: column; position: relative; z-index: 10; contain: layout paint; }
@@ -76,7 +77,8 @@
   /* ================= Panggung (kanan) ================= */
   .panggung { flex: 1; min-width: 0; position: relative; }
   .bingkai { position: absolute; top: 0; bottom: 0; display: flex; flex-direction: column; background: #fff; }
-  .bingkai.sembunyi { visibility: hidden; pointer-events: none; z-index: -1; }
+  .bingkai.sembunyi { visibility: hidden; pointer-events: none; z-index: -1; content-visibility: hidden; }
+  .sedang-zoom .bintang, .sedang-zoom .item.memuat .glif .status { animation-play-state: paused; }
   .bingkai iframe { flex: 1; border: 0; width: 100%; display: block; background: #fff; }
   .kepala-panel { height: 34px; flex-shrink: 0; display: none; align-items: center; gap: 8px; padding: 0 8px 0 12px; background: #fff; border-bottom: 1px solid var(--garis); font-size: 12.5px; color: var(--teks-2); cursor: pointer; }
   .dua .kepala-panel { display: flex; }
@@ -138,6 +140,21 @@
   .catatan-kecil button { border: 0; background: none; padding: 0; color: #d3deeb; text-decoration: underline; text-underline-offset: 3px; font-size: 12.5px; }
   .tagline { margin-top: 22px; padding-top: 16px; border-top: 1px solid #ffffff14; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #6f87a6; }
 
+  /* HP: panel kiri dilebarkan sebagai laci di atas tampilan (tidak mendorong aplikasi, jadi tidak lag) */
+  .tirai-laci { display: none; }
+  @media (max-width: 820px) {
+    .laci-terbuka .tata { padding-left: calc(60px + env(safe-area-inset-left)); }
+    .laci-terbuka .sisi { position: fixed; top: 0; bottom: 0; left: 0; width: min(270px, 82vw); z-index: 30; box-shadow: 12px 0 40px -10px #000a; padding-bottom: env(safe-area-inset-bottom); }
+    .laci-terbuka .sisi .merek .nama { display: inline; }
+    .laci-terbuka .sisi .judul-daftar { display: block; }
+    .laci-terbuka .sisi .item .teks { display: grid; }
+    .laci-terbuka .sisi .item .chip, .laci-terbuka .sisi .aksi-bawah .label-aksi { display: inline; }
+    .laci-terbuka .sisi .merek, .laci-terbuka .sisi .item, .laci-terbuka .sisi .aksi-bawah button { justify-content: flex-start; }
+    .laci-terbuka .sisi .merek { padding: 18px 16px 14px; }
+    .laci-terbuka .sisi .item { padding: 9px 10px; }
+    .laci-terbuka .tirai-laci { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(5, 13, 28, .5); }
+  }
+
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(14px); background: var(--sisi); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px; opacity: 0; transition: .2s; pointer-events: none; z-index: 50; box-shadow: 0 10px 24px -8px rgba(0,0,0,.35); }
   .toast.tampil { opacity: 1; transform: translateX(-50%); }
 
@@ -149,12 +166,20 @@
   .dialog button { padding: 9px 16px; border-radius: 10px; border: 0; background: var(--sisi); color: #fff; font-weight: 600; }
 
   @media (max-width: 820px) {
-    :root { --lebar-sisi: var(--lebar-mini); }
+    :root { --lebar-mini: 60px; --lebar-sisi: 60px; }
     .sisi .merek .nama, .sisi .judul-daftar, .sisi .item .teks, .sisi .item .chip, .sisi .aksi-bawah .label-aksi, .petunjuk-seret { display: none; }
     .sisi .merek, .sisi .item, .sisi .aksi-bawah button { justify-content: center; }
     .sisi .item { padding: 9px 0; }
-    #aksi-dua, #aksi-mini { display: none !important; }
+    #aksi-dua { display: none !important; }
     .sambutan h1 { font-size: 34px; }
+    .sambutan .p-panjang { display: none; }
+    .sambutan .p-pendek { display: block !important; }
+    .sambutan p { font-size: 14.5px; }
+    .tombol-besar { white-space: nowrap; padding: 14px 22px; font-size: 15px; }
+    .sambutan-isi { box-shadow: 0 16px 40px -20px #000c, inset 0 1px 0 #ffffff14; }
+    .sambutan .logo-besar { width: 60px; height: 60px; border-radius: 17px; }
+    .daftar { overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 6px; }
+    .aksi-bawah { padding: 8px 6px max(10px, env(safe-area-inset-bottom)); }
     .sambutan-wadah { justify-items: center; padding: 20px; }
     .sambutan-isi { padding: 28px 22px 22px; text-align: center; }
     .sambutan .logo-besar { margin: 0 auto 18px; }
@@ -223,7 +248,8 @@
         <div class="sambutan-isi">
           <img class="logo-besar" src="/ikon.svg" alt="">
           <h1>Mona<span>lisa</span></h1>
-          <p>Semua aplikasi Operasi Distribusi, mulai dari SAIDI, FGTM, HAR Proteksi, Koreksi APKT, Setting REC/SSO, Kinerja UP3, sampai Pustaka Opdist, dalam satu jendela tanpa berpindah-pindah tab.</p>
+          <p class="p-panjang">Semua aplikasi Operasi Distribusi, mulai dari SAIDI, FGTM, HAR Proteksi, Koreksi APKT, Setting REC/SSO, Kinerja UP3, sampai Pustaka Opdist, dalam satu jendela tanpa berpindah-pindah tab.</p>
+          <p class="p-pendek" style="display:none">Tujuh aplikasi Operasi Distribusi dalam satu jendela.</p>
           <button class="tombol-besar" id="buka-semua">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
             Buka semua aplikasi
@@ -247,6 +273,7 @@
     <button id="tutup-dialog">Mengerti</button>
   </div>
 </div>
+<div class="tirai-laci" id="tirai-laci"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -555,7 +582,22 @@ $('#aksi-dua').addEventListener('click', bagiLayar);
 $('#aksi-muat').addEventListener('click', () => { const id = aktif(); if (id && bingkai[id]) { bingkai[id].muat(); toast(`Memuat ulang ${aplikasi[id].nama}`); } else toast('Belum ada aplikasi yang tampil'); });
 $('#aksi-luar').addEventListener('click', () => bukaLuar());
 $('#aksi-tutup-semua').addEventListener('click', tutupSemua);
-$('#aksi-mini').addEventListener('click', () => { state.mini = !state.mini; render(); });
+const layarHP = matchMedia('(max-width: 820px)');
+function laci(buka) {
+  document.body.classList.toggle('laci-terbuka', buka);
+  $('#aksi-mini .label-aksi').textContent = buka ? 'Tutup panel' : (state.mini ? 'Lebarkan panel' : 'Kecilkan panel');
+  $('#aksi-mini').title = buka ? 'Tutup panel' : 'Lebarkan panel';
+}
+$('#aksi-mini').addEventListener('click', () => {
+  if (layarHP.matches) { laci(!document.body.classList.contains('laci-terbuka')); return; }
+  state.mini = !state.mini; render();
+});
+$('#tirai-laci').addEventListener('click', () => laci(false));
+// Di HP, memilih aplikasi atau tombol lain di panel langsung menutup laci
+$('.sisi').addEventListener('click', (e) => {
+  if (layarHP.matches && document.body.classList.contains('laci-terbuka') && e.target.closest('.item, #ke-awal, #aksi-tutup-semua, #aksi-muat, #aksi-luar')) setTimeout(() => laci(false), 0);
+});
+layarHP.addEventListener('change', () => laci(false));
 let rafTata = 0;
 addEventListener('resize', () => { cancelAnimationFrame(rafTata); rafTata = requestAnimationFrame(render); });
 
@@ -590,7 +632,11 @@ window.LatarMonalisa = (() => {
   const tikus = { x: 0, y: 0, tx: 0, ty: 0 };
   const hemat = matchMedia('(prefers-reduced-motion: reduce)').matches;
   // Resolusi menyesuaikan kemampuan perangkat: turun otomatis bila frame terasa berat, naik lagi bila ringan.
-  const DPR_MAKS = Math.min(devicePixelRatio || 1, 1.5);
+  // HP/tablet: layar sentuh atau layar sempit. Isi adegan sama, hanya cara menggambarnya yang dihemat.
+  const HP = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 820;
+  const DPR_MAKS = HP ? 1 : Math.min(devicePixelRatio || 1, 1.5);
+  const JEDA_FRAME_MS = HP ? 1000 / 30 : 0; // HP: 30 fps sudah halus untuk gerakan pelan, baterai lebih awet
+  let jeda = false, terakhirGambar = 0;
   let dpr = DPR_MAKS, rataFrame = 16, hitungFrame = 0, ukurTertunda = 0;
 
   function buatTower() {
@@ -629,7 +675,7 @@ window.LatarMonalisa = (() => {
   function init() {
     if (siap || !window.THREE) return siap;
     try {
-      renderer = new THREE.WebGLRenderer({ canvas: kanvas, antialias: true, alpha: true, powerPreference: 'low-power' });
+      renderer = new THREE.WebGLRenderer({ canvas: kanvas, antialias: !HP, alpha: true, powerPreference: 'low-power' });
     } catch { return false; }
     renderer.setPixelRatio(dpr);
     scene = new THREE.Scene();
@@ -730,11 +776,13 @@ window.LatarMonalisa = (() => {
     rataFrame = rataFrame * .95 + dtAsli * 1000 * .05;
     if (++hitungFrame < 90) return; // tunggu sekitar 1,5 detik sebelum menilai
     hitungFrame = 0;
-    if (rataFrame > 24 && dpr > 0.75) { dpr = Math.max(0.75, dpr - 0.25); ukur(); }
-    else if (rataFrame < 14 && dpr < DPR_MAKS) { dpr = Math.min(DPR_MAKS, dpr + 0.25); ukur(); }
+    if (rataFrame > (JEDA_FRAME_MS ? 45 : 24) && dpr > 0.75) { dpr = Math.max(0.75, dpr - 0.25); ukur(); }
+    else if (rataFrame < (JEDA_FRAME_MS ? 36 : 14) && dpr < DPR_MAKS) { dpr = Math.min(DPR_MAKS, dpr + 0.25); ukur(); }
   }
 
-  function langkah() {
+  function langkah(waktu) {
+    if (JEDA_FRAME_MS && waktu && waktu - terakhirGambar < JEDA_FRAME_MS - 2) { if (jalan) raf = requestAnimationFrame(langkah); return; }
+    terakhirGambar = waktu || 0;
     const dtAsli = jam.getDelta(); // getDelta juga memperbarui elapsedTime
     const dt = Math.min(dtAsli, .05);
     sesuaikanKualitas(dtAsli);
@@ -761,7 +809,7 @@ window.LatarMonalisa = (() => {
   }
 
   function mulai() {
-    if (jalan || document.hidden) return;
+    if (jalan || document.hidden || jeda) return;
     if (!init()) return;
     jalan = true; jam.getDelta(); hitungFrame = 0; ukur();
     raf = requestAnimationFrame(langkah);
@@ -771,7 +819,29 @@ window.LatarMonalisa = (() => {
   // Ukur ulang hanya saat ukuran kanvas benar-benar berubah, maksimal sekali per frame
   new ResizeObserver(() => { cancelAnimationFrame(ukurTertunda); ukurTertunda = requestAnimationFrame(ukur); }).observe(kanvas);
   document.addEventListener('visibilitychange', () => { if (document.hidden) berhenti(); else if (!document.getElementById('sambutan').hidden) mulai(); });
-  return { mulai, berhenti };
+  // Jeda sementara (mis. saat layar di-zoom). Gambar terakhir tetap tampil, hanya tidak digerakkan.
+  function setJeda(ya) {
+    jeda = ya;
+    if (ya) berhenti();
+    else if (!document.getElementById('sambutan').hidden) mulai();
+  }
+  return { mulai, berhenti, setJeda };
+})();
+// Saat layar di-zoom (pinch), HP harus menggambar ulang semuanya di resolusi lebih tinggi.
+// Selama zoom berlangsung dan selama tampilan masih diperbesar, animasi dihentikan agar tidak hang.
+(() => {
+  const vv = window.visualViewport; if (!vv) return;
+  let tunda = 0;
+  vv.addEventListener('resize', () => {
+    document.body.classList.add('sedang-zoom');
+    window.LatarMonalisa.setJeda(true);
+    clearTimeout(tunda);
+    tunda = setTimeout(() => {
+      const diperbesar = vv.scale > 1.05;
+      document.body.classList.toggle('sedang-zoom', diperbesar);
+      window.LatarMonalisa.setJeda(diperbesar);
+    }, 300);
+  });
 })();
 // three.js dimuat dengan defer, jadi aktifkan setelah halaman siap
 addEventListener('DOMContentLoaded', () => { if (!document.getElementById('sambutan').hidden) window.LatarMonalisa.mulai(); });
