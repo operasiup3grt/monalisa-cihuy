@@ -628,6 +628,83 @@ render();
 window.LatarMonalisa = (() => {
   const kanvas = document.getElementById('latar-3d');
   let siap = false, jalan = false, raf = 0, renderer, scene, kamera, jam, pulsa, posPulsa, rentang = [], tambahanAnim = [];
+  let grupMobil, armada = [], jadwalMobil = 0, gayaTerakhir = -1;
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const acak = (a, b) => a + Math.random() * (b - a);
+
+  // Tiga gaya terbang. cz = posisi kamera (koordinat tanpa putaran).
+  function rute(gaya, cz) {
+    // Tower berdiri di x = 0 (lengan ±11, tinggi 46). Rute dibuat lewat koridor kosong di kiri tower
+    // atau di atas ketinggian tower, supaya mobil tidak menembus rangka.
+    if (gaya === 0) { // menyalip: dari belakang kamera, menanjak di koridor lalu melesat di atas jalur
+      const x = acak(-30, -24);
+      return { titik: [V(x - 6, 10, cz + 60), V(x, 17, cz - 10), V(x + 3, 28, cz - 80), V(-15, 54, cz - 220), V(8, 70, cz - 430), V(30, 84, cz - 650)], laju: acak(55, 68) };
+    }
+    if (gaya === 1) { // berpapasan: datang dari kanan atas di kejauhan, turun dan lewat dekat di atas kamera
+      return { titik: [V(80, 80, cz - 640), V(40, 66, cz - 340), V(-19, 44, cz - 120), V(-26, 34, cz - 20), V(-36, 36, cz + 90)], laju: acak(58, 70) };
+    }
+    // melintas: menyeberang di atas tower di kejauhan sambil menikung
+    const z = cz - acak(150, 230), arah = Math.random() < .5 ? 1 : -1, y = acak(58, 72);
+    return { titik: [V(-300 * arah, y - 6, z + 50), V(-120 * arah, y + 4, z - 5), V(0, y + 8, z - 35), V(130 * arah, y + 2, z - 5), V(320 * arah, y - 4, z + 55)], laju: acak(75, 95) };
+  }
+
+  function luncurkan(mb, cz) {
+    let gaya; do { gaya = Math.floor(Math.random() * 3); } while (gaya === gayaTerakhir && Math.random() < .7);
+    gayaTerakhir = gaya;
+    const r = rute(gaya, cz);
+    mb.kurva = new THREE.CatmullRomCurve3(r.titik, false, 'catmullrom', .5);
+    mb.panjang = mb.kurva.getLength(); mb.laju = r.laju; mb.u = 0; mb.aktif = true;
+    mb.m.visible = true; mb.jejak.forEach((j) => { j.riwayat.length = 0; j.pita.visible = true; });
+  }
+
+  let _p, _q, _t1, _t2, _sisi; // dibuat di init(), setelah three.js termuat
+  function perbaruiMobil(t, dt, d) {
+    if (!armada.length) return;
+    // geser grup agar koordinat tanpa putaran cocok dengan posisi kamera yang berputar
+    grupMobil.position.z = d - (d % JARAK);
+    const cz = 52 - d;
+    jadwalMobil -= dt;
+    if (jadwalMobil <= 0 && !hemat) {
+      const bebas = armada.find((m) => !m.aktif);
+      if (bebas) luncurkan(bebas, cz);
+      jadwalMobil = acak(3, 6.5);
+    }
+    for (const mb of armada) {
+      if (!mb.aktif) continue;
+      mb.u += (mb.laju * dt) / mb.panjang;
+      if (mb.u >= 1) { mb.aktif = false; mb.m.visible = false; mb.jejak.forEach((j) => { j.pita.visible = false; }); continue; }
+      mb.kurva.getPointAt(mb.u, _p);
+      mb.kurva.getPointAt(Math.min(mb.u + .004, 1), _q);
+      mb.m.position.copy(_p);
+      mb.m.lookAt(_q.x, _q.y, _q.z + grupMobil.position.z); // lookAt memakai koordinat dunia
+      // miring saat menikung
+      mb.kurva.getTangentAt(Math.max(mb.u - .01, 0), _t1); mb.kurva.getTangentAt(Math.min(mb.u + .01, 1), _t2);
+      const belok = _t1.x * _t2.z - _t1.z * _t2.x;
+      mb.badan.rotation.z += ((-belok * 22) - mb.badan.rotation.z) * .08;
+      mb.badan.position.y = Math.sin(t * 2.2 + mb.u * 9) * .25; // melayang pelan
+      const denyut = 2.1 + Math.sin(t * 14) * .35;
+      mb.glow.forEach((g) => g.scale.setScalar(denyut));
+      // perbarui jejak cahaya
+      grupMobil.updateMatrixWorld(true);
+      for (const j of mb.jejak) {
+        _sisi.set(j.sx, -.35, -3.6); mb.badan.localToWorld(_sisi); grupMobil.worldToLocal(_sisi);
+        j.riwayat.unshift(_sisi.x, _sisi.y, _sisi.z);
+        const N = j.pos.length / 6;
+        if (j.riwayat.length > N * 3) j.riwayat.length = N * 3;
+        const ada = j.riwayat.length / 3;
+        for (let i = 0; i < N; i++) {
+          const k = Math.min(i, ada - 1) * 3;
+          const f = 1 - i / (N - 1), lebar = .42 * Math.min(1, f * 1.6), a = i * 6;
+          j.pos[a] = j.riwayat[k]; j.pos[a + 1] = j.riwayat[k + 1] + lebar; j.pos[a + 2] = j.riwayat[k + 2];
+          j.pos[a + 3] = j.riwayat[k]; j.pos[a + 4] = j.riwayat[k + 1] - lebar; j.pos[a + 5] = j.riwayat[k + 2];
+          const c = f * f * .7; // memudar
+          j.warna[a] = j.warna[a + 3] = .25 * c; j.warna[a + 1] = j.warna[a + 4] = .7 * c; j.warna[a + 2] = j.warna[a + 5] = 1 * c;
+        }
+        j.pita.geometry.attributes.position.needsUpdate = true;
+        j.pita.geometry.attributes.color.needsUpdate = true;
+      }
+    }
+  }
   const JARAK = 70, JUMLAH_TOWER = 9, PANJANG = JARAK * JUMLAH_TOWER;
   const tikus = { x: 0, y: 0, tx: 0, ty: 0 };
   const hemat = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -758,6 +835,81 @@ window.LatarMonalisa = (() => {
     scene.add(lampu);
     tambahanAnim.push((t) => { lampu.material.opacity = .55 + Math.sin(t * 1.7) * .12; });
 
+    // ================= MOBIL TERBANG (desain original) =================
+    // Koordinat mobil disimpan "tanpa putaran" (jarak tempuh kamera tidak di-reset),
+    // lalu grupnya digeser setiap kali kamera kembali ke awal putaran, jadi gerakannya tetap mulus.
+    scene.add(new THREE.HemisphereLight(0x9cc0ee, 0x0a1a30, 0.9));
+    const bulan = new THREE.DirectionalLight(0xcfe0ff, 0.9); bulan.position.set(-60, 120, 40); scene.add(bulan);
+    grupMobil = new THREE.Group(); scene.add(grupMobil);
+    _p = new THREE.Vector3(); _q = new THREE.Vector3(); _t1 = new THREE.Vector3(); _t2 = new THREE.Vector3(); _sisi = new THREE.Vector3();
+
+    const teksturGlow = (r, g, b) => {
+      const c = document.createElement('canvas'); c.width = c.height = 64;
+      const x = c.getContext('2d'); const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, `rgba(255,255,255,1)`); gr.addColorStop(.3, `rgba(${r},${g},${b},.8)`); gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      x.fillStyle = gr; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c);
+    };
+    const glowBiru = teksturGlow(90, 210, 255), glowMerah = teksturGlow(255, 70, 90);
+
+    // Profil samping (z = panjang, y = tinggi), diekstrusi selebar mobil
+    function profil(titik) { const sh = new THREE.Shape(); sh.moveTo(titik[0][0], titik[0][1]); titik.slice(1).forEach(([a, b]) => sh.lineTo(a, b)); sh.closePath(); return sh; }
+    function ekstrusi(sh, lebar, bevel) {
+      const g = new THREE.ExtrudeGeometry(sh, { depth: lebar, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: 1 });
+      g.rotateY(-Math.PI / 2); g.translate(lebar / 2, 0, 0); return g;
+    }
+    // Siluet rendah dan ramping: hidung runcing, kabin landai, ekor lebar
+    const geoBadan = ekstrusi(profil([[5.9, .1], [4.4, .45], [2.0, .72], [-2.6, .82], [-5.0, .7], [-5.7, .32], [-5.4, -.12], [-1.6, -.3], [3.9, -.18]]), 3.9, .3);
+    const geoKanopi = ekstrusi(profil([[2.6, .7], [.6, 1.32], [-1.7, 1.4], [-3.5, .78]]), 2.3, .22);
+    const geoPod = ekstrusi(profil([[3.0, -.05], [2.2, .3], [-2.9, .3], [-3.6, .02], [-3.0, -.4], [2.0, -.38]]), .85, .14);
+    const matBadan = new THREE.MeshPhongMaterial({ color: 0x223a5a, specular: 0xbfe0ff, shininess: 90 });
+    const matKanopi = new THREE.MeshPhongMaterial({ color: 0x0b2e55, emissive: 0x08305c, specular: 0xffffff, shininess: 140, transparent: true, opacity: .88 });
+    const matTepi = new THREE.LineBasicMaterial({ color: 0xc4e2ff, transparent: true, opacity: 1 });
+    const tepiBadan = new THREE.EdgesGeometry(geoBadan, 28), tepiKanopi = new THREE.EdgesGeometry(geoKanopi, 28), tepiPod = new THREE.EdgesGeometry(geoPod, 28);
+
+    function buatMobil() {
+      const m = new THREE.Group();
+      const badan = new THREE.Group(); m.add(badan);
+      badan.add(new THREE.Mesh(geoBadan, matBadan), new THREE.LineSegments(tepiBadan, matTepi));
+      badan.add(new THREE.Mesh(geoKanopi, matKanopi), new THREE.LineSegments(tepiKanopi, matTepi));
+      for (const sx of [-2.35, 2.35]) { // pod pendorong samping
+        const pod = new THREE.Group(); pod.position.set(sx * 1.08, -.3, -.4);
+        pod.add(new THREE.Mesh(geoPod, matBadan), new THREE.LineSegments(tepiPod, matTepi)); badan.add(pod);
+      }
+      // lampu garis depan (putih kebiruan) dan belakang (merah)
+      const depan = new THREE.Mesh(new THREE.BoxGeometry(3.6, .09, .09), new THREE.MeshBasicMaterial({ color: 0xdff4ff }));
+      depan.scale.x = 1.05; depan.position.set(0, .42, 5.35); badan.add(depan);
+      const belakang = new THREE.Mesh(new THREE.BoxGeometry(3.8, .12, .1), new THREE.MeshBasicMaterial({ color: 0xff3d55 }));
+      belakang.position.set(0, .62, -5.55); badan.add(belakang);
+      // cahaya pendorong (berdenyut) dan cahaya lampu
+      const glow = [];
+      for (const [x, z] of [[-2.55, 1.6], [2.55, 1.6], [-2.55, -2.6], [2.55, -2.6]]) {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowBiru, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+        sp.position.set(x, -.95, z); sp.scale.setScalar(2.4); badan.add(sp); glow.push(sp);
+      }
+      const sorot = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowBiru, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: .9 }));
+      sorot.position.set(0, .42, 5.9); sorot.scale.set(6, 1.3, 1); badan.add(sorot);
+      const rem = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowMerah, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: .9 }));
+      rem.position.set(0, .62, -5.95); rem.scale.set(5, 1.1, 1); rem.material.opacity = .7; badan.add(rem);
+      grupMobil.add(m);
+
+      // Jejak cahaya: pita yang memudar, satu di tiap pod
+      const N = 36, jejak = [];
+      for (let k = 0; k < 2; k++) {
+        const pos = new Float32Array(N * 2 * 3), warna = new Float32Array(N * 2 * 3), idx = [];
+        for (let i = 0; i < N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(warna, 3)); g.setIndex(idx);
+        const pita = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+        pita.frustumCulled = false; grupMobil.add(pita);
+        jejak.push({ pita, pos, warna, riwayat: [], sx: k ? 2.55 : -2.55 });
+      }
+      m.scale.setScalar(2); // sebanding dengan tower (±20 m panjang di skala adegan)
+      m.visible = false; jejak.forEach((j) => { j.pita.visible = false; });
+      return { m, badan, glow, jejak, aktif: false, u: 0, kurva: null, panjang: 1, laju: 1 };
+    }
+    armada = [buatMobil(), buatMobil()];
+    jadwalMobil = 1.2; // detik sampai mobil pertama muncul
+
     addEventListener('pointermove', (e) => { tikus.tx = (e.clientX / innerWidth - .5) * 2; tikus.ty = (e.clientY / innerHeight - .5) * 2; }, { passive: true });
     siap = true;
     ukur();
@@ -788,7 +940,8 @@ window.LatarMonalisa = (() => {
     sesuaikanKualitas(dtAsli);
     const t = jam.elapsedTime;
     // Kamera menyusuri jalur, berulang mulus setiap 1 jarak tower
-    const maju = hemat ? 0 : (t * 6) % JARAK;
+    const tempuh = hemat ? 0 : t * 6; // jarak tempuh kamera
+    const maju = tempuh % JARAK;
     tikus.x += (tikus.tx - tikus.x) * .04; tikus.y += (tikus.ty - tikus.y) * .04;
     kamera.position.set(-46 + tikus.x * 6, 8 - tikus.y * 2.5, 52 - maju);
     kamera.lookAt(-8 + tikus.x * 4, 24, -120 - maju);
@@ -804,6 +957,7 @@ window.LatarMonalisa = (() => {
     }
     pulsa.geometry.attributes.position.needsUpdate = true;
     tambahanAnim.forEach((f) => f(t));
+    perbaruiMobil(t, dt, tempuh);
     renderer.render(scene, kamera);
     if (jalan && !hemat) raf = requestAnimationFrame(langkah);
   }
