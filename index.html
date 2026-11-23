@@ -666,12 +666,20 @@ window.LatarMonalisa = (() => {
   const WARNA = {
     biru: 0x5fb8ff, emas: 0xf2c14e, magenta: 0xe05bd8, hangat: 0xffc983,
     redup: 0x2c5a8c, redupEmas: 0x7a6230, redupMagenta: 0x6a2f6c, jalan: 0x5a4a22,
+    porselen: 0xbfd9f5, lembur: 0xfff0c8, kabelTanah: 0x8a6a24,
+    jendela0: 0xffc983, jendela1: 0xffc983, jendela2: 0xffbf70, jendela3: 0xffd394, jendela4: 0xffc983, jendela5: 0xffb865, jendela6: 0xcfe8ff,
   };
+  const N_JENDELA = 7;
 
   // ---------- Pembangun geometri: kumpulan garis per warna + bidang gelap penutup ----------
-  const G = {}; for (const k of Object.keys(WARNA)) G[k] = [];
+  // G = kota (kabut normal), GL = instalasi listrik (kabut lebih tipis agar jalur transmisi terlihat sampai jauh)
+  const G = {}, GL = {}; for (const k of Object.keys(WARNA)) { G[k] = []; GL[k] = []; }
+  let tujuan = G;
   const MUKA = [];
-  const garis = (w, ax, ay, az, bx, by, bz) => { G[w].push(ax, ay, az, bx, by, bz); };
+  const garis = (w, ax, ay, az, bx, by, bz) => {
+    if (w === 'hangat') w = 'jendela' + ((rnd() * N_JENDELA) | 0); // jendela dibagi ke beberapa kelompok yang bisa menyala/padam
+    tujuan[w].push(ax, ay, az, bx, by, bz);
+  };
   function segi4(a, b, c, d) { MUKA.push(...a, ...b, ...c, ...a, ...c, ...d); }
   function kotakMuka(x0, y0, z0, x1, y1, z1, atas = true) {
     const p = [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], [x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]];
@@ -721,6 +729,11 @@ window.LatarMonalisa = (() => {
       // jendela menyala acak (garis pendek hangat di ambang jendela)
       const peluang = o.jendela ?? 0.12;
       for (let y = y0 + lt * 0.45; y < y1 - 0.5; y += lt) {
+        if (peluang > 0 && rnd() < 0.035) { // satu lantai terang penuh: ada yang lembur
+          garis('lembur', ax + (bx - ax) * .04, y, az + (bz - az) * .04, ax + (bx - ax) * .96, y, az + (bz - az) * .96);
+          garis('lembur', ax + (bx - ax) * .04, y + lt * .3, az + (bz - az) * .04, ax + (bx - ax) * .96, y + lt * .3, az + (bz - az) * .96);
+          continue;
+        }
         for (let i = 0; i < m; i++) {
           if (rnd() > peluang) continue;
           const f0 = (i + 0.18) / m, f1 = (i + 0.82) / m;
@@ -854,76 +867,216 @@ window.LatarMonalisa = (() => {
     garis('emas', X - 21, 18, Z + 34, X - 15, 17, Z + 34); garis('emas', X - 15, 17, Z + 34, X - 15, 14, Z + 34); garis('emas', X - 15, 14, Z + 34, X - 21, 15, Z + 34);
   }
 
-  // ---------- Gardu induk tempat jalur transmisi berakhir ----------
-  const GARDU = { x: 44, z: 40 };
-  const titikGantry = [];
-  function garduInduk() {
-    const X = GARDU.x, Z = GARDU.z;
-    // pagar
-    kotakGaris('redup', X - 15, 0, Z - 16, X + 15, 3, Z + 16);
-    for (let x = -15; x <= 15; x += 3) { garis('redup', X + x, 0, Z - 16, X + x, 3, Z - 16); garis('redup', X + x, 0, Z + 16, X + x, 3, Z + 16); }
-    // gantry penerima (2 portal)
-    for (const z of [Z - 12, Z - 4]) {
-      for (const x of [-10, 10]) kotakGaris('biru', X + x - .5, 0, z - .5, X + x + .5, 16, z + .5);
-      garis('biru', X - 10, 16, z, X + 10, 16, z); garis('biru', X - 10, 13, z, X + 10, 13, z);
-      for (let x = -10; x < 10; x += 2.5) garis('redup', X + x, 13, z, X + x + 2.5, 16, z);
+  // ---------- Gardu Induk 150 kV di tepi utara kota ----------
+  // Listrik datang dari pegunungan lewat dua jalur SUTT sirkit ganda, masuk ke GI,
+  // diturunkan trafo daya, lalu disalurkan ke kota lewat kabel tanah (SKTM).
+  const GI = { x: 40, z: -350 };
+  const KELUAR_GI = [[20, -316], [60, -316]]; // titik keluar kabel tanah dari trafo
+  const BAY = [8, 24, 56, 72];               // x tiap bay penghantar (2 per jalur)
+  const Y_GANTRY = 15, Z_GANTRY = -380;
+
+  // Isolator/peralatan bertingkat: tabung tegak dengan sirip-sirip porselen
+  function tabung(cx, cz, r, y0, y1, w = 'porselen', sirip = true) {
+    const n = 8;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2, b = ((i + 1) / n) * Math.PI * 2;
+      if (i % 2 === 0) garis(w, cx + Math.cos(a) * r, y0, cz + Math.sin(a) * r, cx + Math.cos(a) * r, y1, cz + Math.sin(a) * r);
+      MUKA.push(cx + Math.cos(a) * r, y0, cz + Math.sin(a) * r, cx + Math.cos(b) * r, y0, cz + Math.sin(b) * r, cx + Math.cos(b) * r, y1, cz + Math.sin(b) * r);
+      MUKA.push(cx + Math.cos(a) * r, y0, cz + Math.sin(a) * r, cx + Math.cos(b) * r, y1, cz + Math.sin(b) * r, cx + Math.cos(a) * r, y1, cz + Math.sin(a) * r);
     }
-    for (const x of [-7, 0, 7]) titikGantry.push([X + x, 13, Z - 12]);
-    // busbar & trafo
-    for (const x of [-7, 0, 7]) {
-      garis('biru', X + x, 13, Z - 12, X + x, 13, Z - 4); garis('biru', X + x, 13, Z - 4, X + x, 7, Z + 4);
-      kotakMuka(X + x - 2.2, 0, Z + 3, X + x + 2.2, 5.5, Z + 9); kotakGaris('biru', X + x - 2.2, 0, Z + 3, X + x + 2.2, 5.5, Z + 9);
-      for (let k = 0; k < 6; k++) garis('redup', X + x - 2.6, 0.6, Z + 3.6 + k, X + x - 2.6, 4.8, Z + 3.6 + k); // sirip radiator
-      for (const dx of [-1.2, 0, 1.2]) garis('emas', X + x + dx, 5.5, Z + 4.5, X + x + dx, 7.5, Z + 4.5); // bushing
-    }
+    cincin(w, cx, y0, cz, r, n); cincin(w, cx, y1, cz, r, n);
+    if (sirip) for (let y = y0 + .45; y < y1 - .2; y += .45) cincin(w, cx, y, cz, r * 1.7, 8);
+  }
+  function rangkaKaki(x, z, y1) { // tiang penyangga peralatan (rangka baja kecil)
+    kotakGaris('redup', x - .5, 0, z - .5, x + .5, y1, z + .5);
+    for (let y = 0; y < y1 - .5; y += 1.5) { garis('redup', x - .5, y, z - .5, x + .5, y + 1.5, z - .5); garis('redup', x - .5, y, z + .5, x + .5, y + 1.5, z + .5); }
   }
 
-  // ---------- Jalur transmisi (dari utara menuju gardu) ----------
-  const rentang = [];
-  function buatTower() {
+  function garduInduk() {
+    tujuan = GL;
+    const X0 = -4, X1 = 84, Z0 = -390, Z1 = -310;
+    // Pagar keliling + lampu sorot di sudut
+    kotakGaris('redup', X0, 0, Z0, X1, 2.6, Z1);
+    for (let x = X0; x <= X1; x += 4) { garis('redup', x, 0, Z0, x, 2.6, Z0); if (x < 34 || x > 46) garis('redup', x, 0, Z1, x, 2.6, Z1); }
+    for (let z = Z0; z <= Z1; z += 4) { garis('redup', X0, 0, z, X0, 2.6, z); garis('redup', X1, 0, z, X1, 2.6, z); }
+    for (const [x, z] of [[X0, Z0], [X1, Z0], [X0, Z1], [X1, Z1], [40, Z0], [40, Z1 - 30]]) { garis('biru', x, 0, z, x, 14, z); LAMPU_JALAN.push(x, 14.3, z); }
+    // Gerbang
+    garis('emas', 34, 0, Z1, 34, 4, Z1); garis('emas', 46, 0, Z1, 46, 4, Z1); garis('emas', 34, 4, Z1, 46, 4, Z1);
+    // Jalan dalam GI & batas lapangan kerikil
+    for (let z = Z1; z > Z0 + 4; z -= 5) garis('jalan', 40, .06, z, 40, .06, z - 2.5);
+
+    // Gantry penerima di sisi utara (portal baja kisi)
+    const xs = [X0 + 6, 16, 32, 48, 64, X1 - 6];
+    for (const x of xs) {
+      kotakGaris('biru', x - .7, 0, Z_GANTRY - .7, x + .7, Y_GANTRY + 3, Z_GANTRY + .7);
+      for (let y = 0; y < Y_GANTRY + 3; y += 2) { garis('redup', x - .7, y, Z_GANTRY - .7, x + .7, y + 2, Z_GANTRY - .7); garis('redup', x - .7, y, Z_GANTRY + .7, x + .7, y + 2, Z_GANTRY + .7); }
+      garis('biru', x, Y_GANTRY + 3, Z_GANTRY, x, Y_GANTRY + 6, Z_GANTRY); // tiang kawat tanah
+    }
+    for (const y of [Y_GANTRY, Y_GANTRY + 2.4]) garis('biru', xs[0], y, Z_GANTRY, xs[xs.length - 1], y, Z_GANTRY);
+    for (let x = xs[0]; x < xs[xs.length - 1]; x += 2.4) garis('redup', x, Y_GANTRY, Z_GANTRY, x + 2.4, Y_GANTRY + 2.4, Z_GANTRY);
+
+    // Tiap bay: isolator tarik → arrester → CVT → PMS (pemisah) → PMT (pemutus) → CT → PMS rel
+    for (const bx of BAY) {
+      for (const dx of [-4, 0, 4]) {
+        const x = bx + dx;
+        // rangkaian isolator tarik tergantung di gantry, turun ke peralatan
+        garis('porselen', x, Y_GANTRY, Z_GANTRY, x, Y_GANTRY - 2.2, Z_GANTRY + 1.2);
+        garis('biru', x, Y_GANTRY - 2.2, Z_GANTRY + 1.2, x, 7.5, Z_GANTRY + 6);
+        rangkaKaki(x, Z_GANTRY + 6, 3); tabung(x, Z_GANTRY + 6, .35, 3, 7.5);           // lightning arrester
+        rangkaKaki(x, Z_GANTRY + 10, 3); tabung(x, Z_GANTRY + 10, .5, 3, 8);            // CVT
+        rangkaKaki(x, Z_GANTRY + 15, 3.5); tabung(x, Z_GANTRY + 15, .3, 3.5, 6);       // PMS line
+        garis('emas', x, 6.6, Z_GANTRY + 15, x, 6.6, Z_GANTRY + 18.5);                    // pisau pemisah
+        rangkaKaki(x, Z_GANTRY + 18.5, 3.5); tabung(x, Z_GANTRY + 18.5, .3, 3.5, 6);
+        kotakMuka(x - .9, 1.2, Z_GANTRY + 22, x + .9, 3, Z_GANTRY + 23.4); kotakGaris('redup', x - .9, 1.2, Z_GANTRY + 22, x + .9, 3, Z_GANTRY + 23.4); // lemari mekanik PMT
+        rangkaKaki(x, Z_GANTRY + 22.7, 1.2); tabung(x, Z_GANTRY + 22.7, .55, 3, 9);    // PMT (pemutus)
+        rangkaKaki(x, Z_GANTRY + 27, 3); tabung(x, Z_GANTRY + 27, .45, 3, 7.5);         // CT
+        // penghantar antar peralatan
+        garis('biru', x, 7.5, Z_GANTRY + 6, x, 8, Z_GANTRY + 10); garis('biru', x, 8, Z_GANTRY + 10, x, 6.6, Z_GANTRY + 15);
+        garis('biru', x, 6.6, Z_GANTRY + 18.5, x, 9, Z_GANTRY + 22.7); garis('biru', x, 9, Z_GANTRY + 22.7, x, 7.5, Z_GANTRY + 27);
+        garis('biru', x, 7.5, Z_GANTRY + 27, x, 10, Z_GANTRY + 33);
+      }
+    }
+    // Rel ganda (busbar) di atas portal
+    for (const z of [Z_GANTRY + 33, Z_GANTRY + 37]) {
+      for (let x = 2; x <= 78; x += 12) { kotakGaris('redup', x - .5, 0, z - .5, x + .5, 11, z + .5); garis('redup', x, 11, z, x, 12.5, z); }
+      for (const dy of [0, .7, 1.4]) garis('biru', 2, 10 + dy, z, 78, 10 + dy, z);
+    }
+
+    // Dua trafo daya 150/20 kV
+    for (const tx of [20, 60]) {
+      const tz = -330;
+      garis('biru', tx, 10, Z_GANTRY + 37, tx, 9, tz - 5); // turun dari rel ke trafo
+      kotakMuka(tx - 5, 0, tz - 4, tx + 5, 6.5, tz + 4); kotakGaris('biru', tx - 5, 0, tz - 4, tx + 5, 6.5, tz + 4);
+      kotakGaris('redup', tx - 6, 0, tz - 5, tx + 6, .4, tz + 5); // pondasi & bak minyak
+      for (let k = -3; k <= 3; k += 1) { // radiator di dua sisi
+        for (const s of [-1, 1]) { const x = tx + s * 6.2; garis('redup', x, 1, tz + k, x, 5.8, tz + k); garis('redup', tx + s * 5, 1.2, tz + k, x, 1.2, tz + k); }
+      }
+      // tangki konservator
+      for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; garis('redup', tx - 4, 8 + Math.cos(a), tz + 2.5 + Math.sin(a), tx + 4, 8 + Math.cos(a), tz + 2.5 + Math.sin(a)); }
+      garis('redup', tx - 3, 6.5, tz + 2.5, tx - 3, 7, tz + 2.5); garis('redup', tx + 3, 6.5, tz + 2.5, tx + 3, 7, tz + 2.5);
+      for (const dx of [-3, 0, 3]) tabung(tx + dx, tz - 2.5, .35, 6.5, 9.2);              // bushing 150 kV
+      for (const dx of [-3, -1.5, 0, 1.5, 3]) tabung(tx + dx, tz + 4.3, .22, 4, 5.4, 'porselen', false); // bushing 20 kV
+      // kabel 20 kV turun ke tanah menuju kubikel
+      garis('emas', tx, 5.4, tz + 4.3, tx, .2, tz + 8); garis('emas', tx, .2, tz + 8, tx, .2, -316);
+    }
+    // Gedung kontrol & kubikel 20 kV
+    balok(2, 0, -330, 14, 6, -318, { warna: 'biru', lantai: 3, kolom: 2.4, jendela: .5 });
+    balok(66, 0, -326, 82, 5, -318, { warna: 'emas', redup: 'redupEmas', lantai: 5, kolom: 2, jendela: .3 });
+    tujuan = G;
+  }
+
+  // ---------- Jalur SUTT 150 kV sirkit ganda ----------
+  const TV = [], TC = [], KV = [], KC = [], rentang = [];
+  function buatTower() { // model menara lokal: arah jalur = sumbu z
     const v = [];
     const g = (a, b) => v.push(...a, ...b);
-    const H = 46, levels = [0, 8, 15, 21, 26, 30, 34, 38, 42, 46];
-    const lebar = (y) => 6.5 - (y / H) * 5.3;
+    const H = 46, levels = [0, 6, 11.5, 16.5, 21, 25, 28, 31.5, 35, 38.5, 42, 46];
+    const lebar = (y) => (y < 25 ? 6.2 - (y / 25) * 3.6 : 2.6 - ((y - 25) / 21) * 1.3);
     const sudut = (y) => { const w = lebar(y); return [[-w, y, -w], [w, y, -w], [w, y, w], [-w, y, w]]; };
     for (let i = 0; i < levels.length; i++) {
       const c = sudut(levels[i]);
       for (let k = 0; k < 4; k++) g(c[k], c[(k + 1) % 4]);
+      if (i % 3 === 1) { g(c[0], c[2]); g(c[1], c[3]); } // sekat horizontal
       if (i < levels.length - 1) { const d = sudut(levels[i + 1]); for (let k = 0; k < 4; k++) { g(c[k], d[k]); g(c[k], d[(k + 1) % 4]); g(c[(k + 1) % 4], d[k]); } }
     }
-    const lengan = [[30, 11], [37, 9.5], [44, 8]], titikKawat = [];
+    // pondasi kaki
+    for (const [x, z] of [[-6.2, -6.2], [6.2, -6.2], [6.2, 6.2], [-6.2, 6.2]]) { g([x - .8, 0, z - .8], [x + .8, 0, z - .8]); g([x + .8, 0, z - .8], [x + .8, 0, z + .8]); g([x + .8, 0, z + .8], [x - .8, 0, z + .8]); g([x - .8, 0, z + .8], [x - .8, 0, z - .8]); }
+    const titikKawat = [], titikTanah = [], isolator = [];
+    const lengan = [[31.5, 7.2], [38.5, 8.4], [42, 6.4]].sort((a, b) => a[0] - b[0]);
     for (const [y, L] of lengan) {
       const w = lebar(y);
       for (const s of [-1, 1]) {
-        g([s * w, y, -1.2], [s * L, y, 0]); g([s * w, y, 1.2], [s * L, y, 0]); g([s * w, y - 2.2, -1.2], [s * L, y, 0]); g([s * w, y - 2.2, 1.2], [s * L, y, 0]);
-        g([s * L, y, 0], [s * L, y - 2.6, 0]); titikKawat.push([s * L, y - 2.6, 0]);
+        // lengan rangka segitiga
+        g([s * w, y, -w], [s * L, y, 0]); g([s * w, y, w], [s * L, y, 0]);
+        g([s * w, y - 2.4, -w * .9], [s * L, y, 0]); g([s * w, y - 2.4, w * .9], [s * L, y, 0]);
+        const m = [s * (w + L) / 2, y, 0]; g([s * w, y, -w], m); g([s * w, y, w], m); g([s * w, y - 2.4, 0], m);
+        // isolator gantung + piringan
+        const ujung = [s * (L - .3), y, 0], bawah = [s * (L - .3), y - 2.8, 0];
+        g(ujung, bawah); isolator.push(ujung, bawah);
+        titikKawat.push(bawah);
       }
     }
-    return { v, titikKawat };
+    // puncak kawat tanah (GSW)
+    g([-1.3, 46, -1.3], [0, 51, 0]); g([1.3, 46, -1.3], [0, 51, 0]); g([1.3, 46, 1.3], [0, 51, 0]); g([-1.3, 46, 1.3], [0, 51, 0]);
+    for (const s of [-1, 1]) { g([0, 51, 0], [s * 4.2, 50.4, 0]); g([s * 1.3, 46, 0], [s * 4.2, 50.4, 0]); titikTanah.push([s * 4.2, 50.4, 0]); }
+    // piringan isolator (cincin kecil)
+    for (const [a, b] of isolator) for (let k = 1; k < 7; k++) {
+      const y = a[1] - (k / 7) * (a[1] - b[1]);
+      for (let i = 0; i < 6; i++) { const p = (i / 6) * Math.PI * 2, q = ((i + 1) / 6) * Math.PI * 2; g([a[0] + Math.cos(p) * .34, y, Math.sin(p) * .34], [a[0] + Math.cos(q) * .34, y, Math.sin(q) * .34]); }
+    }
+    return { v, titikKawat, titikTanah };
+  }
+  const POLA_TOWER = { model: null };
+  function pasangTower(x, z, sudutY, terang) {
+    const p = POLA_TOWER.model || (POLA_TOWER.model = buatTower());
+    const c = Math.cos(sudutY), s = Math.sin(sudutY);
+    const ubah = ([lx, ly, lz]) => [x + lx * c + lz * s, ly, z - lx * s + lz * c];
+    for (let i = 0; i < p.v.length; i += 3) {
+      const [wx, wy, wz] = ubah([p.v[i], p.v[i + 1], p.v[i + 2]]);
+      TV.push(wx, wy, wz); TC.push(.62 * terang, .76 * terang, .93 * terang);
+    }
+    LAMPU_MERAH.push(...ubah([0, 51.6, 0]));
+    return { kawat: p.titikKawat.map(ubah), tanah: p.titikTanah.map(ubah) };
+  }
+  function bentang(a, b, sag, terang, fasa) {
+    const seg = 18, kurva = [];
+    for (let n = 0; n <= seg; n++) { const u = n / seg; kurva.push([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u - sag * 4 * u * (1 - u), a[2] + (b[2] - a[2]) * u]); }
+    for (let n = 0; n < seg; n++) { KV.push(...kurva[n], ...kurva[n + 1]); KC.push(.66 * terang, .78 * terang, .92 * terang, .66 * terang, .78 * terang, .92 * terang); }
+    if (fasa) rentang.push(kurva);
   }
   function jalurTransmisi() {
-    const pola = buatTower(), X = 60, zs = [];
-    for (let i = 8; i >= 0; i--) zs.push(-30 - i * 70); // dari jauh ke dekat
-    const towerV = [];
-    let sebelum = null;
-    for (const z of zs) {
-      for (let q = 0; q < pola.v.length; q += 3) towerV.push(pola.v[q] + X, pola.v[q + 1], pola.v[q + 2] + z);
-      const titik = pola.titikKawat.map(([x, y, zz]) => [x + X, y, zz + z]);
-      if (sebelum) titik.forEach((b, k) => sambungKawat(sebelum[k], b, 4.2));
-      sebelum = titik;
+    // Dua jalur datang dari balik pegunungan, berbelok di tower sudut, lalu masuk ke GI
+    const jalur = [
+      { titik: [[-380, -930], [-190, -700], [-40, -540], [16, -440]], bay: [BAY[0], BAY[1]] },
+      { titik: [[440, -900], [260, -660], [110, -530], [64, -440]], bay: [BAY[2], BAY[3]] },
+    ];
+    for (const j of jalur) {
+      // susun posisi tower setiap ±62 m, tower sudut tepat di titik belok
+      const tower = [];
+      for (let i = 0; i < j.titik.length - 1; i++) {
+        const [ax, az] = j.titik[i], [bx, bz] = j.titik[i + 1];
+        const n = Math.max(1, Math.round(Math.hypot(bx - ax, bz - az) / 62));
+        for (let k = 0; k < n; k++) tower.push([ax + (bx - ax) * (k / n), az + (bz - az) * (k / n)]);
+      }
+      tower.push(j.titik[j.titik.length - 1]);
+      let sebelum = null;
+      tower.forEach(([x, z], i) => {
+        const a = tower[Math.max(0, i - 1)], b = tower[Math.min(tower.length - 1, i + 1)];
+        const sudutY = Math.atan2(b[0] - a[0], b[1] - a[1]);
+        const terang = Math.max(.35, 1 - Math.hypot(x - GI.x, z - GI.z) / 750);
+        const t = pasangTower(x, z, sudutY, terang);
+        if (sebelum) {
+          t.kawat.forEach((p, k) => bentang(sebelum.kawat[k], p, 3.2, terang, true));
+          t.tanah.forEach((p, k) => bentang(sebelum.tanah[k], p, 2.2, terang * .6, false));
+        }
+        sebelum = t;
+      });
+      // bentang terakhir: dari tower ujung (dead-end) ke gantry GI; sisi kiri ke bay 1, sisi kanan ke bay 2
+      sebelum.kawat.forEach((p, k) => {
+        const sisi = k % 2, level = (k / 2) | 0;          // urutan titikKawat: [level][sisi]
+        const x = j.bay[sisi] + [-4, 0, 4][level];
+        bentang(p, [x, Y_GANTRY, Z_GANTRY], 2, 1, true);
+      });
+      sebelum.tanah.forEach((p, k) => bentang(p, [j.bay[k] + (k ? 4 : -4), Y_GANTRY + 6, Z_GANTRY], 1.5, .6, false));
     }
-    // bentang terakhir: dari tower terdekat ke gantry gardu (3 fasa, 2 sirkit digabung ke 3 titik)
-    sebelum.forEach((a, k) => sambungKawat(a, titikGantry[k % 3], 3));
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(towerV, 3));
-    scene.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x9cc0ee, transparent: true, opacity: .75 })));
   }
-  const kawatV = [];
-  function sambungKawat(a, b, sag) {
-    const seg = 20, kurva = [];
-    for (let n = 0; n <= seg; n++) { const u = n / seg; kurva.push([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u - sag * 4 * u * (1 - u), a[2] + (b[2] - a[2]) * u]); }
-    for (let n = 0; n < seg; n++) kawatV.push(...kurva[n], ...kurva[n + 1]);
-    rentang.push(kurva);
+
+  // ---------- Kabel tanah (SKTM) dari GI ke seluruh kota ----------
+  const SKTM = [
+    [[60, -316], [60, -300], [60, 60], [28, 60], [28, 40]],          // ke Kantor UP3
+    [[20, -316], [20, -300], [-140, -300], [-140, 160]],
+    [[60, -140], [140, -140], [140, 180]],
+    [[60, -20], [-100, -20], [-100, 160]],
+    [[20, -300], [20, -180], [-60, -180], [-60, 120]],
+    [[60, 100], [180, 100]],
+  ];
+  function kabelTanah() {
+    tujuan = GL;
+    for (const p of SKTM) for (let i = 0; i < p.length - 1; i++) {
+      const [ax, az] = p[i], [bx, bz] = p[i + 1];
+      garis('kabelTanah', ax + 4.5, .1, az + 4.5, bx + 4.5, .1, bz + 4.5);
+    }
+    tujuan = G;
   }
 
   // ---------- Tekstur kanvas ----------
@@ -943,6 +1096,13 @@ window.LatarMonalisa = (() => {
     const t = new THREE.CanvasTexture(c);
     const m = new THREE.Mesh(new THREE.PlaneGeometry(19, 4.75), new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
     m.position.set(KANTOR.x, 69.5, KANTOR.z + 2.15); scene.add(m);
+  }
+  function papanGI() { // papan neon di gedung kontrol GI
+    const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+    const x = c.getContext('2d'); x.font = `800 64px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.shadowColor = '#5fd0ff'; x.shadowBlur = 24; x.fillStyle = '#bfe8ff'; x.fillText('GI GARUT 150 kV', 256, 66);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(13, 3.25), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    m.position.set(8, 7.8, -317.9); scene.add(m);
   }
   function hologramPetir() { // lambang petir hologram berputar di atas kantor (desain sendiri)
     const c = document.createElement('canvas'); c.width = c.height = 256;
@@ -1025,7 +1185,7 @@ window.LatarMonalisa = (() => {
   }
 
   // ---------- Kota ----------
-  const SKIP = (cx, cz) => (cz === 40 && Math.abs(cx) <= 40) || (cz === 80 && Math.abs(cx) <= 40);
+  const SKIP = (cx, cz) => (cz === 40 && cx === 0) || (cz === 80 && Math.abs(cx) <= 40);
   const kotakJalan = [];
   function kota() {
     const langkah = 40, rumah = [];
@@ -1070,8 +1230,8 @@ window.LatarMonalisa = (() => {
     const V = (x, y, z) => new THREE.Vector3(x, y, z);
     ruteKamera = new THREE.CatmullRomCurve3([
       V(-60, 15, 100), V(-24, 12, 100), V(0, 11, 96), V(24, 13, 100), V(60, 17, 100), V(86, 20, 100), V(100, 22, 80),
-      V(100, 24, 20), V(100, 28, -60), V(100, 34, -112), V(84, 50, -142), V(40, 58, -146),
-      V(-20, 42, -140), V(-58, 32, -116), V(-60, 24, -40), V(-60, 18, 30), V(-60, 16, 76),
+      V(100, 25, 20), V(100, 30, -80), V(100, 36, -200), V(100, 42, -290), V(80, 46, -302), V(40, 48, -303),
+      V(0, 46, -301), V(-38, 43, -300), V(-60, 39, -282), V(-60, 33, -200), V(-60, 27, -120), V(-60, 22, -40), V(-60, 18, 30), V(-60, 16, 76),
     ], true, 'centripetal');
     panjangRute = ruteKamera.getLength();
   }
@@ -1180,6 +1340,146 @@ window.LatarMonalisa = (() => {
     } catch { komposer = null; bloomAktif = false; }
   }
 
+  // ---------- Gelombang neon: listrik menjalar dari GI ke seluruh kota ----------
+  const uGel = { value: -999 }, uPusat = { value: null };
+  function polesMaterial(mat, kabutKali = 1) {
+    mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uGel = uGel; sh.uniforms.uPusat = uPusat;
+      sh.vertexShader = 'varying vec3 vDunia;\n' + sh.vertexShader.replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\n  vDunia = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      sh.fragmentShader = 'uniform float uGel; uniform vec2 uPusat; varying vec3 vDunia;\n' + sh.fragmentShader
+        .replace('vec3 outgoingLight = reflectedLight.indirectDiffuse;', `vec3 outgoingLight = reflectedLight.indirectDiffuse;
+  float dGel = uGel - length(vDunia.xz - uPusat) * 0.45 - vDunia.y;
+  float pita = exp(-dGel * dGel / 14.0) + 0.35 * exp(-max(dGel, 0.0) / 14.0) * step(0.0, dGel) * step(dGel, 60.0);
+  outgoingLight += (outgoingLight * 1.4 + vec3(0.06)) * pita;`)
+        .replace('#include <fog_fragment>', THREE.ShaderChunk.fog_fragment.replace('fogDensity * fogDensity', `fogDensity * fogDensity * ${kabutKali.toFixed(3)}`));
+    };
+    mat.customProgramCacheKey = () => 'poles' + kabutKali;
+    return mat;
+  }
+
+  // ---------- Lalu lintas darat: jejak lampu mobil seperti foto long-exposure ----------
+  let lalin = null;
+  function lalinDarat() {
+    const N = HP ? 110 : 260, jalanX = [], jalanZ = [];
+    for (let x = -220; x <= 220; x += 40) jalanX.push(x);
+    for (let z = -300; z <= 200; z += 40) jalanZ.push(z);
+    const mobil = [];
+    for (let i = 0; i < N; i++) {
+      const sb = Math.random() < .5, arah = Math.random() < .5 ? 1 : -1;
+      mobil.push({ sb, tetap: sb ? jalanX[(Math.random() * jalanX.length) | 0] : jalanZ[(Math.random() * jalanZ.length) | 0],
+        arah, s: acak(-320, 220), v: acak(16, 32), lajur: -arah * acak(1.8, 3.6), pj: acak(4, 9) });
+    }
+    const buat = (warna) => {
+      const pos = new Float32Array(N * 12);
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const garisL = new THREE.LineSegments(g, polesMaterial(new THREE.LineBasicMaterial({ color: warna, transparent: true, opacity: .95, blending: THREE.AdditiveBlending, depthWrite: false })));
+      garisL.frustumCulled = false; scene.add(garisL); return g.attributes.position;
+    };
+    lalin = { mobil, putih: buat(0xfff3dc), merah: buat(0xff3348) };
+  }
+  function perbaruiLalin(dt) {
+    if (!lalin) return;
+    lalin.mobil.forEach((m, i) => {
+      if (!hemat) m.s += m.v * m.arah * dt;
+      const [lo, hi] = m.sb ? [-320, 230] : [-240, 240];
+      if (m.s > hi) m.s = lo; if (m.s < lo) m.s = hi;
+      const pos = (m.arah > 0 ? lalin.merah : lalin.putih).array, lain = (m.arah > 0 ? lalin.putih : lalin.merah).array, a = i * 12;
+      let x0, z0, x1, z1, ox, oz;
+      if (m.sb) { x0 = x1 = m.tetap + m.lajur; z0 = m.s; z1 = m.s - m.arah * m.pj; ox = .7; oz = 0; }
+      else { z0 = z1 = m.tetap + m.lajur; x0 = m.s; x1 = m.s - m.arah * m.pj; ox = 0; oz = .7; }
+      const xm = m.sb ? m.tetap : m.s, zm = m.sb ? m.s : m.tetap;
+      const y = (Math.abs(xm - KANTOR.x) < 30 && zm > 14 && zm < 96) ? -50 : .55; // tidak lewat plaza kantor
+      pos.set([x0, y, z0, x1, y, z1, x0 + ox, y, z0 + oz, x1 + ox, y, z1 + oz], a);
+      lain.fill(-99, a, a + 12);
+    });
+    lalin.putih.needsUpdate = lalin.merah.needsUpdate = true;
+  }
+
+  // ---------- Pulsa listrik lewat kabel tanah dari GI ----------
+  let sktm = null;
+  function pulsaSKTM() {
+    const PER = HP ? 3 : 6, jalur = SKTM.map((p) => {
+      const t = p.map(([x, z]) => [x + 4.5, .35, z + 4.5]); let pj = 0; const kum = [0];
+      for (let i = 1; i < t.length; i++) { pj += Math.hypot(t[i][0] - t[i - 1][0], t[i][2] - t[i - 1][2]); kum.push(pj); }
+      return { t, kum, pj };
+    });
+    const pulsa = []; jalur.forEach((j, k) => { for (let i = 0; i < PER; i++) pulsa.push({ j, s: (i / PER) * j.pj, v: acak(40, 60) }); });
+    const kepala = new Float32Array(pulsa.length * 3), ekor = new Float32Array(pulsa.length * 6);
+    const gk = new THREE.BufferGeometry(); gk.setAttribute('position', new THREE.BufferAttribute(kepala, 3));
+    const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.BufferAttribute(ekor, 3));
+    const pk = new THREE.Points(gk, new THREE.PointsMaterial({ size: 4, map: teksturGlow(255, 205, 90), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    const pe = new THREE.LineSegments(ge, new THREE.LineBasicMaterial({ color: 0xffc94a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    pk.frustumCulled = pe.frustumCulled = false; scene.add(pk, pe);
+    const titikPada = (j, s, keluar, o) => {
+      s = Math.max(0, Math.min(j.pj, s)); let i = 1; while (i < j.kum.length - 1 && j.kum[i] < s) i++;
+      const a = j.t[i - 1], b = j.t[i], f = (s - j.kum[i - 1]) / Math.max(.001, j.kum[i] - j.kum[i - 1]);
+      keluar[o] = a[0] + (b[0] - a[0]) * f; keluar[o + 1] = .35; keluar[o + 2] = a[2] + (b[2] - a[2]) * f;
+    };
+    sktm = { pulsa, kepala, ekor, gk, ge, titikPada };
+  }
+  function perbaruiSKTM(dt) {
+    if (!sktm) return;
+    sktm.pulsa.forEach((p, i) => {
+      if (!hemat) { p.s += p.v * dt; if (p.s > p.j.pj) p.s -= p.j.pj; }
+      sktm.titikPada(p.j, p.s, sktm.kepala, i * 3);
+      sktm.titikPada(p.j, p.s, sktm.ekor, i * 6); sktm.titikPada(p.j, p.s - 14, sktm.ekor, i * 6 + 3);
+    });
+    sktm.gk.attributes.position.needsUpdate = true; sktm.ge.attributes.position.needsUpdate = true;
+  }
+
+  // ---------- Kabut tipis melayang di antara gedung ----------
+  let kabut = [];
+  function kabutKota() {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const x = c.getContext('2d');
+    for (let i = 0; i < 26; i++) {
+      const px = 30 + Math.random() * 68, py = 34 + Math.random() * 60, r = 18 + Math.random() * 30;
+      const g = x.createRadialGradient(px, py, 0, px, py, r); g.addColorStop(0, 'rgba(255,255,255,.22)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+    }
+    const tek = new THREE.CanvasTexture(c), N = HP ? 16 : 36;
+    for (let i = 0; i < N; i++) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tek, color: 0x22436b, transparent: true, depthWrite: false, opacity: 0 }));
+      const ukuran = acak(70, 140); sp.scale.set(ukuran, ukuran * .42, 1);
+      sp.position.set(acak(-220, 220), acak(4, 20), acak(-320, 190)); sp.userData = { dasar: acak(.22, .4), laju: acak(1, 3) };
+      scene.add(sp); kabut.push(sp);
+    }
+  }
+  function perbaruiKabut(dt) {
+    for (const sp of kabut) {
+      if (!hemat) { sp.position.x += sp.userData.laju * dt; if (sp.position.x > 240) sp.position.x = -240; }
+      const d = sp.position.distanceTo(kamera.position);
+      sp.material.opacity = sp.userData.dasar * Math.min(1, Math.max(0, (d - 30) / 60)); // memudar saat terlalu dekat kamera
+    }
+  }
+
+  // ---------- Lampu sorot dari atap Kantor UP3 ----------
+  function lampuSorot() {
+    const geo = new THREE.CylinderGeometry(16, .7, 340, 24, 1, true); geo.translate(0, 170, 0);
+    const buat = (warna, fase, miring) => {
+      const mat = new THREE.ShaderMaterial({
+        transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+        uniforms: { warna: { value: new THREE.Color(warna) } },
+        vertexShader: 'varying float h; varying vec3 n; varying vec3 v; void main(){ h = position.y / 340.0; vec4 mv = modelViewMatrix * vec4(position,1.0); v = normalize(-mv.xyz); n = normalize(normalMatrix * normal); gl_Position = projectionMatrix * mv; }',
+        fragmentShader: 'uniform vec3 warna; varying float h; varying vec3 n; varying vec3 v; void main(){ float tepi = pow(abs(dot(n, v)), 1.5); float a = pow(1.0 - h, 2.2) * 0.22 * tepi; gl_FragColor = vec4(warna * a, a); }',
+      });
+      const poros = new THREE.Group(), sinar = new THREE.Mesh(geo, mat);
+      sinar.rotation.z = miring; poros.add(sinar); poros.position.set(KANTOR.x + (fase ? 6 : -6), 73.5, KANTOR.z - 4); scene.add(poros);
+      perFrame.push((t) => { poros.rotation.y = t * .32 + fase * Math.PI; sinar.rotation.z = miring + Math.sin(t * .5 + fase * 2) * .12; });
+    };
+    buat(0xffd26a, 0, .42); buat(0x6cc4ff, 1, .36);
+  }
+
+  // ---------- Jendela hidup: menyala/padam bergantian ----------
+  const kelompokJendela = [];
+  function perbaruiJendela(t, dt) {
+    for (const k of kelompokJendela) {
+      if (t > k.berikut) { k.target = Math.random() < .3 ? .12 : 1; k.berikut = t + acak(1.5, 6); }
+      k.o += (k.target - k.o) * Math.min(1, dt * 3);
+      k.mat.opacity = k.o * (k.neon && Math.random() < .04 ? .3 : 1); // lampu neon putih sesekali berkedip
+    }
+  }
+
   // ---------- Inisialisasi ----------
   let pulsa, posPulsa;
   function init() {
@@ -1187,7 +1487,8 @@ window.LatarMonalisa = (() => {
     try { renderer = new THREE.WebGLRenderer({ canvas: kanvas, antialias: !HP, alpha: false, powerPreference: HP ? 'low-power' : 'high-performance' }); } catch { return false; }
     renderer.setPixelRatio(dpr); renderer.setClearColor(0x050d1c);
     scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x0a1a33, HP ? 0.0046 : 0.0040);
+    scene.fog = new THREE.FogExp2(0x0a1a33, HP ? 0.0042 : 0.0036);
+    uPusat.value = new THREE.Vector2(GI.x, GI.z);
     kamera = new THREE.PerspectiveCamera(58, 1, 0.5, 3000);
     jam = new THREE.Clock();
 
@@ -1195,9 +1496,10 @@ window.LatarMonalisa = (() => {
     const grid = new THREE.GridHelper(1600, 160, 0x1f4a7a, 0x10294a);
     grid.material.transparent = true; grid.material.opacity = .5; scene.add(grid);
 
-    kantorUP3(); garduInduk();
+    kantorUP3(); garduInduk(); kabelTanah();
     const rumah = kota();
-    jalurTransmisi(); papanNama(); hologramPetir();
+    jalurTransmisi(); papanNama(); hologramPetir(); papanGI();
+    lalinDarat(); pulsaSKTM(); kabutKota(); lampuSorot();
 
     // billboard di atap gedung yang dekat dengan rute kamera
     buatRuteKamera();
@@ -1212,25 +1514,30 @@ window.LatarMonalisa = (() => {
     });
 
     // Satukan semua garis per warna (beberapa draw call saja untuk seluruh kota)
-    for (const [k, arr] of Object.entries(G)) {
+    for (const [kumpulan, kabutKali] of [[G, 1], [GL, .3]]) for (const [k, arr] of Object.entries(kumpulan)) {
       if (!arr.length) continue;
       const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
-      const redup = k.startsWith('redup') || k === 'jalan';
-      scene.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: WARNA[k], transparent: true, opacity: redup ? .75 : 1 })));
+      const redup = k.startsWith('redup') || k === 'jalan' || k === 'kabelTanah';
+      const mat = polesMaterial(new THREE.LineBasicMaterial({ color: WARNA[k], transparent: true, opacity: redup ? .75 : 1 }), kabutKali);
+      scene.add(new THREE.LineSegments(g, mat));
+      if (k.startsWith('jendela')) kelompokJendela.push({ mat, o: 1, target: 1, berikut: Math.random() * 4, neon: k === 'jendela6' });
     }
     const gm = new THREE.BufferGeometry(); gm.setAttribute('position', new THREE.Float32BufferAttribute(MUKA, 3));
     scene.add(new THREE.Mesh(gm, new THREE.MeshBasicMaterial({ color: 0x050c18, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 })));
-    const gk = new THREE.BufferGeometry(); gk.setAttribute('position', new THREE.Float32BufferAttribute(kawatV, 3));
-    scene.add(new THREE.LineSegments(gk, new THREE.LineBasicMaterial({ color: 0xa9c4e8, transparent: true, opacity: .45 })));
+    // Menara & kawat transmisi (warna memudar makin jauh dari GI)
+    for (const [V, C, op] of [[TV, TC, 1], [KV, KC, .7]]) {
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(V, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
+      scene.add(new THREE.LineSegments(g, polesMaterial(new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: op }), .3)));
+    }
 
-    // Pulsa energi mengalir dari tower menuju gardu
+    // Pulsa energi mengalir di penghantar menuju GI
     const tek = teksturGlow(242, 193, 78);
-    const PER = 2, n = rentang.length * PER;
+    const PER = HP ? 1 : 2, n = rentang.length * PER;
     posPulsa = new Float32Array(n * 3);
     const titikPulsa = []; for (let i = 0; i < n; i++) titikPulsa.push({ r: Math.floor(i / PER), u: Math.random(), v: .25 + Math.random() * .35 });
     const gp = new THREE.BufferGeometry(); gp.setAttribute('position', new THREE.BufferAttribute(posPulsa, 3));
-    pulsa = new THREE.Points(gp, new THREE.PointsMaterial({ size: 2.8, map: tek, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
-    scene.add(pulsa);
+    pulsa = new THREE.Points(gp, new THREE.PointsMaterial({ size: 2.6, map: tek, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+    pulsa.frustumCulled = false; scene.add(pulsa);
     perFrame.push((t, dt) => {
       for (let i = 0; i < titikPulsa.length; i++) {
         const p = titikPulsa[i]; if (!hemat) { p.u += p.v * dt; if (p.u > 1) p.u -= 1; }
@@ -1238,6 +1545,11 @@ window.LatarMonalisa = (() => {
         posPulsa[i * 3] = k[a][0] + (k[b][0] - k[a][0]) * w; posPulsa[i * 3 + 1] = k[a][1] + (k[b][1] - k[a][1]) * w; posPulsa[i * 3 + 2] = k[a][2] + (k[b][2] - k[a][2]) * w;
       }
       pulsa.geometry.attributes.position.needsUpdate = true;
+    });
+    // Animasi kota: gelombang dari GI tiap ±14 detik, jendela, lalu lintas, pulsa kabel tanah, kabut
+    perFrame.push((t, dt) => {
+      uGel.value = hemat ? -999 : ((t + 3) % 14) * 70 - 40;
+      perbaruiJendela(t, dt); perbaruiLalin(dt); perbaruiSKTM(dt); perbaruiKabut(dt);
     });
 
     // Lampu antena berkedip & lampu jalan
@@ -1278,21 +1590,36 @@ window.LatarMonalisa = (() => {
     } else if (rataFrame < batasRingan && dpr < DPR_MAKS) { dpr = Math.min(DPR_MAKS, dpr + 0.25); ukur(); }
   }
 
-  // Kamera berjalan menyusuri rute melingkar (sekitar 2 menit per putaran)
-  const _kp = () => new THREE.Vector3();
-  let kp, kt, kantorV;
-  function gerakKamera(t) {
-    if (!kp) { kp = _kp(); kt = _kp(); kantorV = new THREE.Vector3(KANTOR.x, 34, KANTOR.z); }
-    const u = hemat ? 0.08 : ((t * 7.5) / panjangRute + 0.06) % 1;
+  // Kamera berjalan menyusuri rute melingkar: melambat di dekat Kantor UP3 & GI, miring saat berbelok
+  let kp, kt, kd, t1, t2, sKam = -1, roll = 0, fokusHalus = 0;
+  const FOKUS = [];
+  function gerakKamera(t, dt) {
+    if (!kp) {
+      kp = new THREE.Vector3(); kt = new THREE.Vector3(); kd = new THREE.Vector3(); t1 = new THREE.Vector3(); t2 = new THREE.Vector3();
+      FOKUS.push({ p: new THREE.Vector3(KANTOR.x, 34, KANTOR.z), r: 100, kuat: .85 }, { p: new THREE.Vector3(GI.x, 24, GI.z - 20), r: 120, kuat: .5 });
+    }
+    if (sKam < 0) sKam = panjangRute * 0.06;
+    const laju = 10 - 5.5 * fokusHalus;
+    if (!hemat) sKam = (sKam + laju * dt) % panjangRute;
+    const u = hemat ? 0.08 : sKam / panjangRute;
     ruteKamera.getPointAt(u, kp);
-    ruteKamera.getPointAt((u + 0.035) % 1, kt);
-    kt.y = kp.y + 4;
-    // saat dekat kantor, pandangan sedikit menoleh ke Kantor UP3
-    const dekat = Math.min(1, Math.max(0, 1.25 - kp.distanceTo(kantorV) / 100));
-    kt.lerp(kantorV, dekat * 0.85);
+    ruteKamera.getPointAt((u + 0.03) % 1, kt);
+    kt.y = kp.y + 3;
+    // menoleh ke titik penting (Kantor UP3, Gardu Induk) saat lewat
+    let fokus = 0;
+    for (const f of FOKUS) {
+      const k = Math.min(1, Math.max(0, 1.25 - kp.distanceTo(f.p) / f.r));
+      if (k > 0) { kt.lerp(f.p, k * f.kuat); fokus = Math.max(fokus, k); }
+    }
+    fokusHalus += (fokus - fokusHalus) * Math.min(1, dt * 1.5);
+    // kemiringan saat menikung
+    ruteKamera.getTangentAt(u, t1); ruteKamera.getTangentAt((u + 0.012) % 1, t2);
+    const belok = t1.x * t2.z - t1.z * t2.x;
+    roll += (Math.max(-.07, Math.min(.07, -belok * 2)) - roll) * Math.min(1, dt * 2);
     tikus.x += (tikus.tx - tikus.x) * .04; tikus.y += (tikus.ty - tikus.y) * .04;
-    kamera.position.set(kp.x + tikus.x * 3, kp.y - tikus.y * 2, kp.z);
+    kamera.position.set(kp.x + tikus.x * 3, kp.y - tikus.y * 2 + Math.sin(t * .6) * .5, kp.z);
     kamera.lookAt(kt.x + tikus.x * 6, kt.y - tikus.y * 3, kt.z);
+    kamera.rotateZ(roll);
   }
 
   function langkah(waktu) {
@@ -1300,7 +1627,7 @@ window.LatarMonalisa = (() => {
     terakhirGambar = waktu || 0;
     const dtAsli = jam.getDelta(), dt = Math.min(dtAsli, .05), t = jam.elapsedTime;
     sesuaikanKualitas(dtAsli);
-    gerakKamera(t);
+    gerakKamera(t, dt);
     for (const f of perFrame) f(t, dt);
     for (const b of billboard) { // ganti isi billboard bergantian
       b.m.material.opacity = .82 + Math.sin(t * 9 + b.i) * .06 + (Math.random() < .01 ? -.4 : 0);
