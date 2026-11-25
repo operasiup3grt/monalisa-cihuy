@@ -40,6 +40,8 @@
   .mini .merek { justify-content: center; padding-inline: 0; }
 
   .daftar { list-style: none; margin: 0; padding: 0 10px; display: grid; gap: 4px; }
+  .daftar .judul-grup { padding: 12px 10px 6px; margin-top: 6px; border-top: 1px solid #ffffff14; }
+  .mini .daftar .judul-grup { display: block; font-size: 0; padding: 0; margin: 6px 8px 2px; }
   .item { position: relative; display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 12px; cursor: pointer; transition: background .15s, color .15s; user-select: none; }
   .mini .item { justify-content: center; padding: 9px 0; }
   .item:hover { background: #ffffff0d; color: var(--sisi-teks-terang); }
@@ -173,6 +175,8 @@
   @media (max-width: 820px) {
     :root { --lebar-mini: 60px; --lebar-sisi: 60px; }
     .sisi .merek .nama, .sisi .judul-daftar, .sisi .item .teks, .sisi .item .chip, .sisi .aksi-bawah .label-aksi, .petunjuk-seret { display: none; }
+    .sisi .daftar .judul-grup { display: block; font-size: 0; padding: 0; margin: 6px 8px 2px; }
+    .laci-terbuka .sisi .daftar .judul-grup { font-size: 10.5px; padding: 12px 10px 6px; }
     .sisi .merek, .sisi .item, .sisi .aksi-bawah button { justify-content: center; }
     .sisi .item { padding: 9px 0; }
     #aksi-dua { display: none !important; }
@@ -261,8 +265,8 @@
           </div>
         </header>
         <div class="panel-bawah">
-          <p class="p-panjang">Semua aplikasi Operasi Distribusi, mulai dari SAIDI, FGTM, HAR Proteksi, Koreksi APKT, Setting REC/SSO, Kinerja UP3, sampai Pustaka Opdist, dalam satu jendela tanpa berpindah-pindah tab.</p>
-          <p class="p-pendek" style="display:none">Tujuh aplikasi Operasi Distribusi dalam satu jendela.</p>
+          <p class="p-panjang">Semua aplikasi Operasi Distribusi, mulai dari SAIDI, FGTM, HAR Proteksi, Koreksi APKT, Setting REC/SSO, Kinerja UP3, sampai Pustaka Opdist, ditambah Event Log untuk dispatcher, dalam satu jendela tanpa berpindah-pindah tab.</p>
+          <p class="p-pendek" style="display:none">Aplikasi Operasi Distribusi & dispatcher dalam satu jendela.</p>
           <button class="tombol-besar" id="buka-semua">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
             Buka semua aplikasi
@@ -301,7 +305,10 @@ const APLIKASI = [
   { id: 'setting',  nama: 'Setting REC/SSO', ket: 'Koordinasi PMT–recloser–SSO',    glif: 'SR', warna: 'linear-gradient(135deg,#4c8de0,#1d56a3)', titik: '#1f5fa8', url: 'https://cc-proteksi.portalgarut5.web.id/' },
   { id: 'kinerja',  nama: 'Kinerja UP3',     ket: 'Realisasi kinerja & indikator',  glif: 'KU', warna: 'linear-gradient(135deg,#34c38f,#13865d)', titik: '#1a9b6c', url: 'https://kinerjaup3.portalgarut5.web.id/' },
   { id: 'pustaka',  nama: 'Pustaka Opdist',  ket: 'Dokumen & SLD gardu induk',      glif: 'PO', warna: 'linear-gradient(135deg,#c79a5b,#8a6230)', titik: '#a67a3f', url: 'https://pandu-grt.vercel.app/' },
+  // ---- Aplikasi Dispatcher (tampil di kelompok terpisah) ----
+  { id: 'eventlog', nama: 'Event Log',       ket: 'Catatan kejadian dispatcher',    glif: 'EL', warna: 'linear-gradient(135deg,#e04848,#9c1f2a)', titik: '#c0303c', url: 'https://eventlog.portalgarut5.web.id/', grup: 'dispatcher' },
 ];
+const GRUP = [{ id: '', judul: '' }, { id: 'dispatcher', judul: 'Aplikasi Dispatcher' }];
 const BATAS_LAMBAT_MS = 25000;
 
 const $ = (s) => document.querySelector(s);
@@ -464,7 +471,10 @@ function render() {
   $('#aksi-mini .label-aksi').textContent = state.mini ? 'Lebarkan panel' : 'Kecilkan panel';
 
   // Daftar aplikasi (statis, urutan bisa diubah)
-  $('#daftar').innerHTML = state.urutan.map((id) => {
+  $('#daftar').innerHTML = GRUP.map((g) => {
+    const isi = state.urutan.filter((id) => (aplikasi[id].grup || '') === g.id);
+    if (!isi.length) return '';
+    return (g.judul ? `<li class="judul-daftar judul-grup" aria-hidden="false">${g.judul}</li>` : '') + isi.map((id) => {
     const a = aplikasi[id];
     const pos = state.kiri === id ? 'kiri' : state.kanan === id ? 'kanan' : '';
     const st = bingkai[id]?.status || '';
@@ -473,6 +483,7 @@ function render() {
       <span class="glif" style="background:${a.warna}">${a.glif}<span class="status"></span></span>
       <span class="teks"><b>${a.nama}</b><small>${a.ket}</small></span>${chip}
       ${bingkai[id] ? `<button class="tutup-item" data-tutup="${id}" title="Tutup ${a.nama}" aria-label="Tutup ${a.nama}">×</button>` : ''}</li>`;
+  }).join('');
   }).join('');
 
   // Posisi bingkai
