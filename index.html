@@ -972,6 +972,82 @@ window.LatarMonalisa = (() => {
     x.shadowColor = warna; x.shadowBlur = ukuran * .35; x.fillStyle = warna; x.fillText(teks, cx, cy);
     x.shadowBlur = 0; x.globalAlpha = .6; x.fillStyle = '#fff'; x.fillText(teks, cx, cy); x.globalAlpha = 1;
   }
+  // ---------- Bendera plaza (desain orisinal) ----------
+  function benderaYantek(x, w, h) {
+    // "Kru Yantek": tengkorak berhelm proyek kuning + dua petir bersilang di atas hitam
+    x.save();
+    x.fillStyle = '#0d0f14'; x.fillRect(0, 0, w, h);
+    const s = h / 100; x.translate(w / 2, h / 2 + 4 * s); x.scale(s, s);
+    x.lineJoin = 'round'; x.lineCap = 'round';
+    // petir bersilang di belakang
+    const petir = (arah) => {
+      x.save(); x.translate(0, 2); x.rotate(arah * 0.95); x.scale(1.25, 1.12);
+      x.beginPath();
+      [[-3, -48], [11, -48], [3, -12], [13, -12], [-6, 48], [-1, 4], [-12, 4]].forEach(([a, b], i) => (i ? x.lineTo(a, b) : x.moveTo(a, b)));
+      x.closePath(); x.fillStyle = '#f5c518'; x.fill(); x.lineWidth = 2.2; x.strokeStyle = '#0d0f14'; x.stroke();
+      x.restore();
+    };
+    petir(-1); petir(1);
+    // tengkorak (bentuk agak bersudut, rahang terpisah)
+    x.fillStyle = '#f4f1e8'; x.strokeStyle = '#0d0f14'; x.lineWidth = 2.4;
+    x.beginPath();
+    x.moveTo(-20, -6); x.bezierCurveTo(-22, -30, 22, -30, 20, -6);
+    x.lineTo(18, 8); x.lineTo(12, 12); x.lineTo(-12, 12); x.lineTo(-18, 8); x.closePath();
+    x.fill(); x.stroke();
+    x.beginPath(); x.moveTo(-11, 13); x.lineTo(11, 13); x.lineTo(9, 24); x.lineTo(-9, 24); x.closePath(); x.fill(); x.stroke(); // rahang
+    for (const gx of [-4.5, 0, 4.5]) { x.beginPath(); x.moveTo(gx, 14); x.lineTo(gx, 23); x.stroke(); }
+    // mata segitiga & hidung
+    x.fillStyle = '#0d0f14';
+    for (const sx of [-1, 1]) { x.beginPath(); x.moveTo(sx * 3, -2); x.lineTo(sx * 15, -4); x.lineTo(sx * 10, 6); x.closePath(); x.fill(); }
+    x.beginPath(); x.moveTo(0, 5); x.lineTo(-2.5, 10); x.lineTo(2.5, 10); x.closePath(); x.fill();
+    // helm proyek kuning: kubah + rusuk tengah + lis depan + lampu
+    x.fillStyle = '#f5c518'; x.lineWidth = 2.4;
+    x.beginPath(); x.moveTo(-22, -12); x.bezierCurveTo(-22, -40, 22, -40, 22, -12); x.closePath(); x.fill(); x.stroke();
+    x.beginPath(); x.moveTo(-27, -12); x.lineTo(27, -12); x.lineTo(25, -8); x.lineTo(-25, -8); x.closePath(); x.fill(); x.stroke(); // lis
+    x.beginPath(); x.moveTo(-4, -35); x.lineTo(4, -35); x.lineTo(4, -12); x.lineTo(-4, -12); x.closePath(); x.fillStyle = '#e0ad0c'; x.fill(); x.stroke(); // rusuk
+    x.beginPath(); x.arc(0, -22, 4, 0, Math.PI * 2); x.fillStyle = '#ffffff'; x.fill(); x.stroke(); // lampu kepala
+    x.restore();
+    // tulisan
+    x.save(); x.fillStyle = '#f5c518'; x.font = `900 ${h * .09}px "Plus Jakarta Sans","Segoe UI",system-ui,sans-serif`;
+    x.textAlign = 'center'; x.textBaseline = 'alphabetic'; x.fillText('KRU YANTEK', w / 2, h * .95); x.restore();
+  }
+
+  function benderaSayap(x, w, h) {
+    // "Pasukan Dispatcher": sepasang sayap emas terbentang mengapit lingkaran petir, di atas biru tua
+    x.save();
+    const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#0f2f5c'); g.addColorStop(1, '#081a36');
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#f2c14e'; x.fillRect(0, h * .9, w, h * .1); // pita bawah
+    const s = h / 100; x.translate(w / 2, h * .44); x.scale(s, s);
+    x.lineJoin = 'round';
+    // sayap: bulu-bulu horizontal bertumpuk, memendek ke bawah
+    for (const sisi of [-1, 1]) {
+      for (let i = 0; i < 5; i++) {
+        const y = -14 + i * 7, pj = 58 - i * 9, tebal = 6.2;
+        x.beginPath();
+        x.moveTo(sisi * 15, y);
+        x.lineTo(sisi * (15 + pj), y - 6 + i * 1.5);
+        x.lineTo(sisi * (15 + pj - 7), y + tebal - 3 + i * 1.5);
+        x.lineTo(sisi * 15, y + tebal);
+        x.closePath();
+        x.fillStyle = i % 2 ? '#e3ad2f' : '#f7d36b'; x.fill();
+        x.lineWidth = 1.4; x.strokeStyle = '#6b4a0c'; x.stroke();
+      }
+    }
+    // lingkaran tengah + petir
+    x.beginPath(); x.arc(0, 0, 18, 0, Math.PI * 2); x.fillStyle = '#081a36'; x.fill();
+    x.lineWidth = 3.2; x.strokeStyle = '#f2c14e'; x.stroke();
+    x.beginPath();
+    [[3, -14], [-8, 2], [-1, 2], [-4, 14], [8, -3], [1, -3]].forEach(([a, b], i) => (i ? x.lineTo(a, b) : x.moveTo(a, b)));
+    x.closePath(); x.fillStyle = '#ffe28a'; x.fill();
+    // tiga bintang
+    const bintang = (cx, cy, r) => { x.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? r * .45 : r; x.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); } x.closePath(); x.fillStyle = '#f2c14e'; x.fill(); };
+    bintang(-12, -30, 4); bintang(0, -33, 5); bintang(12, -30, 4);
+    x.restore();
+    x.save(); x.fillStyle = '#081a36'; x.font = `900 ${h * .075}px "Plus Jakarta Sans","Segoe UI",system-ui,sans-serif`;
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('PASUKAN DISPATCHER', w / 2, h * .952); x.restore();
+  }
+
   function papanNama() {
     const X = KANTOR.x, Z = KANTOR.z, depan = Z + 8;
     // huruf besar "PLN" di atap
@@ -1016,7 +1092,7 @@ window.LatarMonalisa = (() => {
     }, 10, 3.6, X + 15, 6, Z + 8.15, false);
     // bendera (berkibar)
     const bendera = (x, tinggi, gambar) => {
-      const c = document.createElement('canvas'); c.width = 128; c.height = 84; gambar(c.getContext('2d'));
+      const c = document.createElement('canvas'); c.width = 384; c.height = 252; gambar(c.getContext('2d'), 384, 252);
       const geo = new THREE.PlaneGeometry(3.6, 2.4, 10, 1); geo.translate(1.8, 0, 0);
       const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), side: THREE.DoubleSide, color: 0xbfc8d8 }));
       m.position.set(X + x, tinggi - 1.3, Z + 30); scene.add(m);
@@ -1026,9 +1102,9 @@ window.LatarMonalisa = (() => {
         p.needsUpdate = true; m.rotation.y = Math.sin(t * .3 + x) * .3 + .4;
       });
     };
-    bendera(0, 14, (x) => { x.fillStyle = '#e8202a'; x.fillRect(0, 0, 128, 42); x.fillStyle = '#ffffff'; x.fillRect(0, 42, 128, 42); });
-    bendera(-4.5, 12, (x) => { x.fillStyle = '#1aa3df'; x.fillRect(0, 0, 128, 84); x.fillStyle = '#ffd21f'; x.fillRect(0, 56, 128, 10); });
-    bendera(4.5, 12, (x) => { x.fillStyle = '#0b3a7a'; x.fillRect(0, 0, 128, 84); x.fillStyle = '#ffffff'; x.fillRect(0, 36, 128, 6); });
+    bendera(0, 14, (x, w, h) => { x.fillStyle = '#e8202a'; x.fillRect(0, 0, w, h / 2); x.fillStyle = '#ffffff'; x.fillRect(0, h / 2, w, h / 2); }); // Merah Putih
+    bendera(-4.5, 12, benderaYantek);  // Kru Yantek
+    bendera(4.5, 12, benderaSayap);    // Pasukan Dispatcher
     // lampu rotator Yantek (kuning-oranye, bergantian) & layar SPKLU hijau
     const gr = new THREE.BufferGeometry(); gr.setAttribute('position', new THREE.Float32BufferAttribute(KANTOR_ROTATOR, 3));
     const rot = new THREE.Points(gr, new THREE.PointsMaterial({ size: 1.3, map: teksturGlow(255, 160, 40), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
