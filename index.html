@@ -48,6 +48,8 @@
   .item.tampil { background: #ffffff12; color: #fff; }
   .item.fokus::before { content: ""; position: absolute; left: -10px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: var(--emas); }
   .item .glif { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: 12px; color: #fff; flex-shrink: 0; position: relative; letter-spacing: .02em; }
+  .item .glif svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 1px #0004); }
+  .item .glif svg .isi { fill: #fff; stroke: none; }
   .item .glif .status { position: absolute; right: -3px; bottom: -3px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--sisi); background: #4b5d76; }
   .item.hidup .glif .status { background: #3ecf8e; }
   .item.memuat .glif .status { background: var(--emas); animation: kedip 1s ease-in-out infinite; }
@@ -309,6 +311,25 @@ const APLIKASI = [
   { id: 'eventlog', nama: 'Event Log',       ket: 'Catatan kejadian dispatcher',    glif: 'EL', warna: 'linear-gradient(135deg,#e04848,#9c1f2a)', titik: '#c0303c', url: 'https://eventlog.portalgarut5.web.id/', grup: 'dispatcher' },
 ];
 const GRUP = [{ id: '', judul: '' }, { id: 'dispatcher', judul: 'Aplikasi Dispatcher' }];
+// Ikon tiap aplikasi (garis putih 24×24, desain sendiri). Aplikasi tanpa ikon memakai huruf glif.
+const IKON = {
+  // SAIDI SAIFI: jam (durasi padam) + petir (frekuensi gangguan)
+  saidi: '<circle cx="10.5" cy="13.5" r="7.5"/><path d="M10.5 9.5v4l2.8 1.8"/><path d="M19.5 2.5l-2.6 4.2h3.4l-2.6 4.3"/>',
+  // FGTM: tiang SUTM tersambar petir
+  fgtm: '<path d="M7 21V3.5"/><path d="M3 6.5h8M4 10h6"/><path d="M11 6.5c2.2 1.2 3.6 1.4 5 1"/><path d="M17.5 10l-2.3 4h3.3l-2.3 4.5"/><path d="M4.5 21h5"/>',
+  // HAR Proteksi: perisai dengan centang (inspeksi)
+  proteksi: '<path d="M12 2.8l7.2 3v5.4c0 4.6-3 8.3-7.2 10-4.2-1.7-7.2-5.4-7.2-10V5.8z"/><path d="M8.6 12.2l2.4 2.4 4.6-4.8"/>',
+  // Koreksi APKT: dokumen + pensil
+  apkt: '<path d="M13.5 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M13.5 3v4.5H18V10"/><path d="M8.5 11.5h6M8.5 15h3"/><path d="M18.6 12.4l2 2-5.6 5.6-2.6.6.6-2.6z"/>',
+  // Setting REC/SSO: panel pengatur (slider)
+  setting: '<path d="M4 6h9.5M18.5 6H20M4 12h3.5M12.5 12H20M4 18h11.5"/><circle cx="16" cy="6" r="2.3"/><circle cx="10" cy="12" r="2.3"/><circle cx="18" cy="18" r="2.3"/>',
+  // Kinerja UP3: grafik batang dengan panah naik
+  kinerja: '<path d="M3.5 20.5h17"/><path d="M6.5 17v-2.5M11 17v-4.5M15.5 17v-3M20 17v-7"/><path d="M4.5 11l4.5-4.5 3.2 3.2L18.5 3.5"/><path d="M15 3.5h3.5V7"/>',
+  // Pustaka Opdist: buku terbuka
+  pustaka: '<path d="M3 5.5c2.8-1.2 5.8-1 9 1 3.2-2 6.2-2.2 9-1V19c-2.8-1.2-5.8-1-9 1-3.2-2-6.2-2.2-9-1z"/><path d="M12 6.5V20"/><path d="M6 9.5h3M6 12.5h3M15 9.5h3M15 12.5h3"/>',
+  // Event Log: garis waktu kejadian
+  eventlog: '<circle cx="5" cy="5.5" r="1.6" class="isi"/><circle cx="5" cy="12" r="1.6" class="isi"/><circle cx="5" cy="18.5" r="1.6" class="isi"/><path d="M5 7.5v2.5M5 14v2.5"/><path d="M9.5 5.5h11M9.5 12h11M9.5 18.5h7"/>',
+};
 const BATAS_LAMBAT_MS = 25000;
 
 const $ = (s) => document.querySelector(s);
@@ -480,7 +501,7 @@ function render() {
     const st = bingkai[id]?.status || '';
     const chip = dua && pos ? `<span class="chip">${pos}</span>` : '';
     return `<li class="item ${pos ? 'tampil' : ''} ${pos && pos === state.fokus && dua ? 'fokus' : (pos && !dua ? 'fokus' : '')} ${st}" data-id="${id}" draggable="true" tabindex="0" title="${a.nama}">
-      <span class="glif" style="background:${a.warna}">${a.glif}<span class="status"></span></span>
+      <span class="glif" style="background:${a.warna}">${IKON[id] ? `<svg viewBox="0 0 24 24" aria-hidden="true">${IKON[id]}</svg>` : a.glif}<span class="status"></span></span>
       <span class="teks"><b>${a.nama}</b><small>${a.ket}</small></span>${chip}
       ${bingkai[id] ? `<button class="tutup-item" data-tutup="${id}" title="Tutup ${a.nama}" aria-label="Tutup ${a.nama}">×</button>` : ''}</li>`;
   }).join('');
