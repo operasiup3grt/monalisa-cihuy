@@ -34,7 +34,11 @@
   .merek { display: flex; align-items: center; gap: 12px; padding: 18px 16px 14px; border: 0; background: none; text-align: left; color: var(--sisi-teks-terang); }
   .merek img { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; box-shadow: 0 0 0 1px #ffffff1f; }
   .merek .nama { font-weight: 800; font-size: 19px; letter-spacing: .01em; line-height: 1; }
-  .merek .nama small { display: block; font-weight: 500; font-size: 11px; color: var(--sisi-teks); letter-spacing: .02em; margin-top: 5px; }
+  #aksi-keluar { position: absolute; top: 22px; right: 12px; width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--sisi-garis); border-radius: 9px; background: #ffffff08; color: var(--sisi-teks); cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+  #aksi-keluar:hover { background: #e0484826; color: #ff8a8a; border-color: #e0484866; }
+  #aksi-keluar svg { width: 16px; height: 16px; }
+  #aksi-keluar[hidden], .mini #aksi-keluar { display: none; }
+  .merek .nama small { display: block; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; font-size: 11px; color: var(--sisi-teks); letter-spacing: .02em; margin-top: 5px; }
   .judul-daftar { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: #6f84a1; padding: 14px 20px 8px; font-weight: 700; }
   .mini .merek .nama, .mini .judul-daftar, .mini .item .teks, .mini .item .chip, .mini .aksi-bawah .label-aksi { display: none; }
   .mini .merek { justify-content: center; padding-inline: 0; }
@@ -180,6 +184,8 @@
     .laci-terbuka .tata { padding-left: calc(60px + env(safe-area-inset-left)); }
     .laci-terbuka .sisi { position: fixed; top: 0; bottom: 0; left: 0; width: min(270px, 82vw); z-index: 30; box-shadow: 12px 0 40px -10px #000a; padding-bottom: env(safe-area-inset-bottom); }
     .laci-terbuka .sisi .merek .nama { display: inline; }
+    .sisi #aksi-keluar { display: none; }
+    .laci-terbuka .sisi #aksi-keluar:not([hidden]) { display: grid; }
     .laci-terbuka .sisi .judul-daftar { display: block; }
     .laci-terbuka .sisi .item .teks { display: grid; }
     .laci-terbuka .sisi .item .chip, .laci-terbuka .sisi .aksi-bawah .label-aksi { display: inline; }
@@ -238,7 +244,10 @@
   <aside class="sisi" aria-label="Daftar aplikasi">
     <button class="merek" id="ke-awal" title="Halaman awal">
       <img src="/ikon.svg" alt="">
-      <span class="nama">Monalisa<small>Portal Operasi UP3 Garut</small></span>
+      <span class="nama">Monalisa<small id="info-akun">Portal Operasi UP3 Garut</small></span>
+    </button>
+    <button id="aksi-keluar" title="Keluar dari Monalisa" aria-label="Keluar dari Monalisa" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l5-5-5-5"/><path d="M15 12H4"/></svg>
     </button>
     <ul class="daftar" id="daftar"></ul>
     <p class="petunjuk-seret">Seret untuk mengubah urutan, atau seret ke layar kanan untuk membagi layar.</p>
@@ -667,6 +676,21 @@ $('#aksi-dua').addEventListener('click', bagiLayar);
 $('#aksi-muat').addEventListener('click', () => { const id = aktif(); if (id && bingkai[id]) { bingkai[id].muat(); toast(`Memuat ulang ${aplikasi[id].nama}`); } else toast('Belum ada aplikasi yang tampil'); });
 $('#aksi-luar').addEventListener('click', () => bukaLuar());
 $('#aksi-tutup-semua').addEventListener('click', tutupSemua);
+// Akun portal (diisi oleh penjaga Vercel lewat kuki monalisa_nama setelah login di portal)
+(() => {
+  const m = document.cookie.match(/(?:^|;\s*)monalisa_nama=([^;]*)/);
+  if (!m) return;
+  let nama = ''; try { nama = decodeURIComponent(m[1]); } catch { nama = ''; }
+  if (!nama) return;
+  $('#info-akun').textContent = 'Masuk: ' + nama;
+  $('#info-akun').title = nama;
+  $('#aksi-keluar').hidden = false;
+  $('#aksi-keluar').addEventListener('click', () => {
+    if (!confirm('Keluar dari Monalisa? Semua aplikasi yang terbuka akan ditutup.')) return;
+    tutupSemua();
+    location.href = '/keluar';
+  });
+})();
 const layarHP = matchMedia('(max-width: 820px)');
 function laci(buka) {
   document.body.classList.toggle('laci-terbuka', buka);
