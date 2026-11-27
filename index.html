@@ -680,6 +680,15 @@ $('#aksi-tutup-semua').addEventListener('click', tutupSemua);
 (() => {
   const m = document.cookie.match(/(?:^|;\s*)monalisa_nama=([^;]*)/);
   if (!m) return;
+  // Penjaga sesi: kalau halaman dipulihkan dari tombol Back setelah keluar, atau sesi habis, kembali ke portal
+  const adaKuki = () => /(?:^|;\s*)monalisa_nama=/.test(document.cookie);
+  const cekSesi = async () => {
+    if (!adaKuki()) { location.replace('/'); return; }
+    try { const r = await fetch('/sesi', { cache: 'no-store', credentials: 'same-origin' }); if (r.status === 401) location.replace('/'); } catch {}
+  };
+  addEventListener('pageshow', (e) => { if (e.persisted || !adaKuki()) cekSesi(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) cekSesi(); });
+  setInterval(cekSesi, 5 * 60 * 1000);
   let nama = ''; try { nama = decodeURIComponent(m[1]); } catch { nama = ''; }
   if (!nama) return;
   $('#info-akun').textContent = 'Masuk: ' + nama;
