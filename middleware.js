@@ -9,7 +9,7 @@ import { next } from '@vercel/functions';
 
 export const config = { matcher: ['/', '/index.html', '/masuk', '/keluar', '/sesi'] };
 
-const PORTAL = 'https://www.portalgarut5.web.id/';
+const PORTAL = 'https://garut5.com/';
 const PORTAL_MASUK = PORTAL + '?ke=monalisa';
 const SESI_JAM = 12;
 const PERAN = ['SUPERADMIN', 'ULP'];
