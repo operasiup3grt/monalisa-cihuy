@@ -307,7 +307,7 @@
           </div>
         </header>
         <div class="panel-bawah">
-          <p class="p-panjang">Semua aplikasi Operasi Distribusi, mulai dari SAIDI, FGTM, HAR Proteksi, Koreksi APKT, Setting REC/SSO, Kinerja UP3, sampai Pustaka Opdist, ditambah Event Log, Jadwal HAR, dan Logsheet untuk dispatcher, dalam satu jendela tanpa berpindah-pindah tab.</p>
+          <p class="p-panjang">Semua aplikasi Operasi Distribusi, mulai dari SAIDI, FGTM, HAR Proteksi, Koreksi APKT, Setting REC/SSO, Kinerja UP3, sampai Pustaka Opdist, ditambah Event Log, Jadwal HAR, Logsheet, dan RCT/RPT untuk dispatcher, dalam satu jendela tanpa berpindah-pindah tab.</p>
           <p class="p-pendek" style="display:none">Aplikasi Operasi Distribusi & dispatcher dalam satu jendela.</p>
           <button class="tombol-besar" id="buka-semua">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
@@ -351,6 +351,7 @@ const APLIKASI = [
   { id: 'eventlog', nama: 'Event Log',       ket: 'Catatan kejadian dispatcher',    glif: 'EL', warna: 'linear-gradient(135deg,#e04848,#9c1f2a)', titik: '#c0303c', url: 'https://eventlog.portalgarut5.web.id/', grup: 'dispatcher' },
   { id: 'jadwalhar', nama: 'Jadwal HAR',     ket: 'Jadwal pemeliharaan jaringan',   glif: 'JH', warna: 'linear-gradient(135deg,#3fb6d8,#16708f)', titik: '#1f8fae', url: 'https://jadwalhar.portalgarut5.web.id/', grup: 'dispatcher' },
   { id: 'logsheet', nama: 'Logsheet',        ket: 'Logsheet operasi harian',        glif: 'LS', warna: 'linear-gradient(135deg,#a9bd3c,#5f7a14)', titik: '#7f9a22', url: 'https://logsheet.portalgarut5.web.id/', grup: 'dispatcher' },
+  { id: 'rctrpt',   nama: 'RCT/RPT',         ket: 'Waktu respons & pemulihan',     glif: 'RR', warna: 'linear-gradient(135deg,#6d74ff,#3a3fc4)', titik: '#4a50d8', url: 'https://rctrpt.portalgarut5.web.id/', grup: 'dispatcher' },
 ];
 const GRUP = [
   { id: '', judul: 'Aplikasi Opdist', aksen: '#5fc8ff', ikon: '<path d="M13 2.5L5.5 13.5h5.5l-1 8 7.5-11h-5.5z"/>' },          // petir: Operasi Distribusi
@@ -377,6 +378,8 @@ const IKON = {
   jadwalhar: '<rect x="3" y="4.5" width="15" height="14.5" rx="2"/><path d="M3 9h15M7.5 2.5v4M13.5 2.5v4"/><path d="M6.5 12.5h2M6.5 15.5h2M11 12.5h1"/><path d="M21.2 14.3a2.6 2.6 0 0 1-3.4 3.1l-3.6 3.6a1.1 1.1 0 0 1-1.6-1.6l3.6-3.6a2.6 2.6 0 0 1 3.1-3.4l-1.6 1.6.3 1.6 1.6.3z"/>',
   // Logsheet: papan klip berisi tabel
   logsheet: '<rect x="4.5" y="4" width="15" height="17.5" rx="2"/><path d="M9 2.5h6v3H9z"/><path d="M8 10h8M8 13.5h8M8 17h8M11.5 9v9"/>',
+  // RCT/RPT: stopwatch dengan petir (waktu respons & pemulihan gangguan)
+  rctrpt: '<circle cx="12" cy="13.5" r="7.8"/><path d="M10 2.5h4M12 2.5v3.2M18.6 6.8l1.4-1.4"/><path d="M12.9 9.2l-2.6 4.6h3.2l-2.4 4.4"/>',
   eventlog: '<circle cx="5" cy="5.5" r="1.6" class="isi"/><circle cx="5" cy="12" r="1.6" class="isi"/><circle cx="5" cy="18.5" r="1.6" class="isi"/><path d="M5 7.5v2.5M5 14v2.5"/><path d="M9.5 5.5h11M9.5 12h11M9.5 18.5h7"/>',
 };
 const BATAS_LAMBAT_MS = 25000;
