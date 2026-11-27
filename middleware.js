@@ -7,7 +7,7 @@
    ========================================================= */
 import { next } from '@vercel/functions';
 
-export const config = { matcher: ['/', '/index.html', '/masuk', '/keluar'] };
+export const config = { matcher: ['/', '/index.html', '/masuk', '/keluar', '/sesi'] };
 
 const PORTAL = 'https://www.portalgarut5.web.id/';
 const PORTAL_MASUK = PORTAL + '?ke=monalisa';
@@ -57,7 +57,7 @@ export default async function middleware(request) {
 
   if (url.pathname === '/masuk') {
     const tiket = await periksa(url.searchParams.get('t'), rahasia, 'monalisa-tiket');
-    if (!tiket || tiket.exp - Date.now() > 5 * 60 * 1000) return alihkan(PORTAL_MASUK);
+    if (!tiket || tiket.exp - Date.now() > 2 * 60 * 1000) return alihkan(PORTAL_MASUK);
     const umur = SESI_JAM * 3600;
     const sesi = await tandatangani({ aud: 'monalisa-sesi', u: tiket.u, n: tiket.n, r: tiket.r, exp: Date.now() + umur * 1000 }, rahasia);
     return alihkan('/', [
@@ -66,8 +66,14 @@ export default async function middleware(request) {
     ]);
   }
 
+  if (url.pathname === '/sesi') { // dipakai halaman untuk memastikan sesi masih sah (mis. setelah tombol Back)
+    const ok = await periksa(ambilKuki(request, 'monalisa_sesi'), rahasia, 'monalisa-sesi');
+    return new Response(null, { status: ok ? 204 : 401, headers: { 'Cache-Control': 'no-store' } });
+  }
+
   if (url.pathname === '/keluar') {
-    return alihkan(PORTAL, [
+    // keluar=1 → portal ikut mengakhiri sesinya, jadi tombol Back tidak bisa masuk lagi
+    return alihkan(PORTAL + '?keluar=1', [
       'monalisa_sesi=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax',
       'monalisa_nama=; Path=/; Max-Age=0; Secure; SameSite=Lax',
     ]);
