@@ -58,6 +58,11 @@ export default async function middleware(request) {
   if (url.pathname === '/masuk') {
     const tiket = await periksa(url.searchParams.get('t'), rahasia, 'monalisa-tiket');
     if (!tiket || tiket.exp - Date.now() > 2 * 60 * 1000) return alihkan(PORTAL_MASUK);
+    // Tiket yang dibuat SEBELUM pengguna menekan Keluar di browser ini tidak berlaku lagi
+    // (mencegah tombol "Lanjut ke Monalisa" lama yang muncul lagi lewat tombol Back).
+    const waktuKeluar = Number(ambilKuki(request, 'monalisa_keluar')) || 0;
+    const dibuat = typeof tiket.iat === 'number' ? tiket.iat : tiket.exp - 2 * 60 * 1000;
+    if (dibuat <= waktuKeluar) return alihkan(PORTAL_MASUK);
     const umur = SESI_JAM * 3600;
     const sesi = await tandatangani({ aud: 'monalisa-sesi', u: tiket.u, n: tiket.n, r: tiket.r, exp: Date.now() + umur * 1000 }, rahasia);
     return alihkan('/', [
@@ -76,6 +81,7 @@ export default async function middleware(request) {
     return alihkan(PORTAL + '?keluar=1', [
       'monalisa_sesi=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax',
       'monalisa_nama=; Path=/; Max-Age=0; Secure; SameSite=Lax',
+      `monalisa_keluar=${Date.now()}; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Lax`,
     ]);
   }
 
