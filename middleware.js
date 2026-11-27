@@ -77,8 +77,9 @@ export default async function middleware(request) {
   }
 
   if (url.pathname === '/keluar') {
-    // keluar=1 → portal ikut mengakhiri sesinya, jadi tombol Back tidak bisa masuk lagi
-    return alihkan(PORTAL + '?keluar=1', [
+    // keluar=1 → portal ikut mengakhiri sesinya, jadi tombol Back tidak bisa masuk lagi;
+    // ke=monalisa → login berikutnya langsung kembali ke Monalisa
+    return alihkan(PORTAL_MASUK + '&keluar=1', [ // kembali ke login portal versi Monalisa
       'monalisa_sesi=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax',
       'monalisa_nama=; Path=/; Max-Age=0; Secure; SameSite=Lax',
       `monalisa_keluar=${Date.now()}; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Lax`,
