@@ -1,0 +1,12 @@
+{
+  "name": "monalisa-cihuy",
+  "version": "1.0.0",
+  "description": "Portal Operasi UP3 Garut",
+  "private": true,
+  "scripts": {
+    "test": "echo \"No tests configured\" && exit 0"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^1.4.1"
+  }
+}
